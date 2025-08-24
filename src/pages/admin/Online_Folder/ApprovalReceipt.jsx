@@ -44,6 +44,9 @@ export default function ApprovalReceipt() {
   const confirmApproval = async () => {
     if (!bookingId || !state.adminId || !state.selectedRooms?.length) {
       alert("Missing data to confirm approval.");
+      console.log(bookingId);
+      console.log(state.adminId);
+      console.log(state.selectedRooms?.length);
       return;
     }
 
@@ -60,6 +63,10 @@ export default function ApprovalReceipt() {
           room_ids: state.selectedRooms.map((r) => r.id),
         })
       );
+
+      console.log("Booking Id: ", bookingId);
+      console.log("Admin Id: ", state.adminId);
+      console.log("Rooms: ", state.selectedRooms.map((r) => r.id));
 
       const res = await axios.post(APIConn, fd);
       if (res.data?.success) {

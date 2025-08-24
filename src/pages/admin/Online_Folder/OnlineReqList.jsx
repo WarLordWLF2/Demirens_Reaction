@@ -31,13 +31,13 @@ export default function OnlineReqList() {
 
       const checkInStr = b.booking_checkin_dateandtime
         ? new Date(b.booking_checkin_dateandtime).toLocaleDateString("en-US", {
-            month: "short", day: "numeric", year: "numeric",
-          })
+          month: "short", day: "numeric", year: "numeric",
+        })
         : "";
       const checkOutStr = b.booking_checkout_dateandtime
         ? new Date(b.booking_checkout_dateandtime).toLocaleDateString("en-US", {
-            month: "short", day: "numeric", year: "numeric",
-          })
+          month: "short", day: "numeric", year: "numeric",
+        })
         : "";
       const dateMatch = toStr(checkInStr).includes(term) || toStr(checkOutStr).includes(term);
 
@@ -73,7 +73,7 @@ export default function OnlineReqList() {
         "json",
         JSON.stringify({
           booking_id: bookingId,
-          admin_id: localStorage.getItem("admin_id"),
+          admin_id: localStorage.getItem("admin_id") || 1,
           room_ids: roomIds,
         })
       );
@@ -126,7 +126,7 @@ export default function OnlineReqList() {
     setState((prev) => ({
       ...prev,
       bookingId: booking.booking_id,
-      adminId: localStorage.getItem("admin_id") || prev.adminId,
+      adminId: localStorage.getItem("admin_id") || 1,
       customerName: booking.customer_name,
       checkIn: checkInISO,
       checkOut: checkOutISO,
@@ -187,13 +187,12 @@ export default function OnlineReqList() {
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="bg-muted text-muted-foreground">
-                    <th className="border border-border p-2 sticky top-0 z-10 bg-card">Booking ID</th>
+                    <th className="border border-border p-2 sticky top-0 z-10 bg-card">Reference No.</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Customer Name</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Rooms Requested</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Stay Dates</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Downpayment</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Payment Method</th>
-                    <th className="border border-border p-2 sticky top-0 z-10 bg-card">Reference No.</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Status</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Action</th>
                   </tr>
@@ -202,16 +201,22 @@ export default function OnlineReqList() {
                   {filteredBookings.length > 0 ? (
                     filteredBookings.map((booking) => (
                       <tr key={booking.booking_id} className="hover:bg-muted transition-colors">
-                        <td className="border border-border p-2">{booking.booking_id}</td>
+                        <td className="border border-border p-2">
+                          {booking.reference_no ||
+                            booking.referenceNumber ||
+                            booking.payment?.referenceNumber ||
+                            "-"}
+                        </td> 
                         <td className="border border-border p-2">{booking.customer_name}</td>
                         <td className="border border-border p-2">
                           {booking.rooms?.length
-                            ? booking.rooms.map((r) => (
-                                <div key={`${booking.booking_id}-${r.roomnumber_id}`}>
-                                  {r.roomtype_name}
-                                </div>
-                              ))
+                            ? booking.rooms.map((r, index) => (
+                              <div key={`${booking.booking_id}-${r.roomtype_id}-${index}`}>
+                                {r.roomtype_name}
+                              </div>
+                            ))
                             : "-"}
+
                         </td>
                         <td className="border border-border p-2">
                           {new Date(booking.booking_checkin_dateandtime).toLocaleDateString("en-US", {
@@ -232,31 +237,26 @@ export default function OnlineReqList() {
                             booking.payment?.method ||
                             "-"}
                         </td>
-                        <td className="border border-border p-2">
-                          {booking.reference_no ||
-                            booking.referenceNumber ||
-                            booking.payment?.referenceNumber ||
-                            "-"}
-                        </td>
+
                         <td className="border border-border p-2">
                           {booking.rooms?.length
-                            ? booking.rooms.map((r) => {
-                                const s = (r.status_name || "").toLowerCase();
-                                const cls =
-                                  s === "approved"
-                                    ? "bg-green-200 text-green-800"
-                                    : s === "rejected"
+                            ? booking.rooms.map((r, index) => {
+                              const s = (r.status_name || "").toLowerCase();
+                              const cls =
+                                s === "approved"
+                                  ? "bg-green-200 text-green-800"
+                                  : s === "rejected"
                                     ? "bg-red-200 text-red-800"
                                     : "bg-yellow-200 text-yellow-800";
-                                return (
-                                  <div
-                                    key={`${booking.booking_id}-${r.roomnumber_id}-status`}
-                                    className={`${cls} px-2 py-1 rounded inline-block mr-1 mb-1`}
-                                  >
-                                    {r.status_name}
-                                  </div>
-                                );
-                              })
+                              return (
+                                <div
+                                  key={`${booking.booking_id}-${r.roomtype_id}-${index}-status`}
+                                  className={`${cls} px-2 py-1 rounded inline-block mr-1 mb-1`}
+                                >
+                                  {r.status_name}
+                                </div>
+                              );
+                            })
                             : "-"}
                         </td>
                         <td className="border border-border p-2 text-center space-x-2">
