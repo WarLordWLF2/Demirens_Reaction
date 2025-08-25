@@ -158,28 +158,6 @@ export default function OnlineReqList() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-            <p className="text-sm text-muted-foreground">Total Requests</p>
-            <p className="text-2xl font-bold">{totalRequests}</p>
-          </div>
-          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-            <p className="text-sm text-muted-foreground">Pending Requests</p>
-            <p className="text-2xl font-bold text-yellow-600">{pendingRequests}</p>
-          </div>
-          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-            <p className="text-sm text-muted-foreground">Approved Requests</p>
-            <p className="text-2xl font-bold text-green-600">{approvedRequests}</p>
-          </div>
-          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
-            <p className="text-2xl font-bold text-green-600">
-              ₱{totalRevenue.toLocaleString()}
-            </p>
-          </div>
-        </div>
-
         {/* Table */}
         <div className="hidden md:block">
           <ScrollArea className="h-[480px] w-full rounded-lg border border-border bg-card shadow-sm">
@@ -189,10 +167,10 @@ export default function OnlineReqList() {
                   <tr className="bg-muted text-muted-foreground">
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Reference No.</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Customer Name</th>
-                    <th className="border border-border p-2 sticky top-0 z-10 bg-card">Rooms Requested</th>
+                    <th className="border border-border p-2 sticky top-0 z-10 bg-card">Guests</th>
+                    <th className="border border-border p-2 sticky top-0 z-10 bg-card">Room Types</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Stay Dates</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Downpayment</th>
-                    <th className="border border-border p-2 sticky top-0 z-10 bg-card">Payment Method</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Status</th>
                     <th className="border border-border p-2 sticky top-0 z-10 bg-card">Action</th>
                   </tr>
@@ -202,21 +180,18 @@ export default function OnlineReqList() {
                     filteredBookings.map((booking) => (
                       <tr key={booking.booking_id} className="hover:bg-muted transition-colors">
                         <td className="border border-border p-2">
-                          {booking.reference_no ||
-                            booking.referenceNumber ||
-                            booking.payment?.referenceNumber ||
-                            "-"}
-                        </td> 
+                          {booking.reference_no || "-"}
+                        </td>
                         <td className="border border-border p-2">{booking.customer_name}</td>
+                        <td className="border border-border p-2">{booking.guests_amnt}</td>
                         <td className="border border-border p-2">
                           {booking.rooms?.length
                             ? booking.rooms.map((r, index) => (
-                              <div key={`${booking.booking_id}-${r.roomtype_id}-${index}`}>
-                                {r.roomtype_name}
-                              </div>
-                            ))
+                                <div key={`${booking.booking_id}-${r.roomtype_id}-${index}`}>
+                                  {r.roomtype_name}
+                                </div>
+                              ))
                             : "-"}
-
                         </td>
                         <td className="border border-border p-2">
                           {new Date(booking.booking_checkin_dateandtime).toLocaleDateString("en-US", {
@@ -231,33 +206,7 @@ export default function OnlineReqList() {
                           ₱{Number(booking.booking_downpayment || 0).toLocaleString()}
                         </td>
                         <td className="border border-border p-2">
-                          {booking.payment_method ||
-                            booking.payment_method_name ||
-                            booking.method ||
-                            booking.payment?.method ||
-                            "-"}
-                        </td>
-
-                        <td className="border border-border p-2">
-                          {booking.rooms?.length
-                            ? booking.rooms.map((r, index) => {
-                              const s = (r.status_name || "").toLowerCase();
-                              const cls =
-                                s === "approved"
-                                  ? "bg-green-200 text-green-800"
-                                  : s === "rejected"
-                                    ? "bg-red-200 text-red-800"
-                                    : "bg-yellow-200 text-yellow-800";
-                              return (
-                                <div
-                                  key={`${booking.booking_id}-${r.roomtype_id}-${index}-status`}
-                                  className={`${cls} px-2 py-1 rounded inline-block mr-1 mb-1`}
-                                >
-                                  {r.status_name}
-                                </div>
-                              );
-                            })
-                            : "-"}
+                          {booking.booking_status}
                         </td>
                         <td className="border border-border p-2 text-center space-x-2">
                           <button
@@ -282,7 +231,7 @@ export default function OnlineReqList() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="9" className="text-center p-4 text-muted-foreground">
+                      <td colSpan="8" className="text-center p-4 text-muted-foreground">
                         No booking requests found.
                       </td>
                     </tr>
