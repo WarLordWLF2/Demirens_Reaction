@@ -14,6 +14,20 @@ export default function OnlineReqList() {
   const navigate = useNavigate();
   const { setState } = useApproval();
 
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const formData = new FormData();
+        formData.append("method", "reqBookingList");
+        const res = await axios.post(APIConn, formData);
+        if (res.data) setBookings(res.data);
+      } catch (err) {
+        console.error("Error fetching bookings:", err);
+      }
+    };
+    fetchBookings();
+  }, [APIConn]);
+
   const filteredBookings = useMemo(() => {
     if (!searchTerm) return bookings;
     const term = searchTerm.toLowerCase().trim();
@@ -31,13 +45,13 @@ export default function OnlineReqList() {
 
       const checkInStr = b.booking_checkin_dateandtime
         ? new Date(b.booking_checkin_dateandtime).toLocaleDateString("en-US", {
-          month: "short", day: "numeric", year: "numeric",
-        })
+            month: "short", day: "numeric", year: "numeric",
+          })
         : "";
       const checkOutStr = b.booking_checkout_dateandtime
         ? new Date(b.booking_checkout_dateandtime).toLocaleDateString("en-US", {
-          month: "short", day: "numeric", year: "numeric",
-        })
+            month: "short", day: "numeric", year: "numeric",
+          })
         : "";
       const dateMatch = toStr(checkInStr).includes(term) || toStr(checkOutStr).includes(term);
 
@@ -48,21 +62,6 @@ export default function OnlineReqList() {
       return customerMatch || bookingIdMatch || paymentMatch || referenceMatch || dateMatch || roomsMatch;
     });
   }, [bookings, searchTerm]);
-
-  const fetchBookings = async () => {
-    try {
-      const formData = new FormData();
-      formData.append("method", "reqBookingList");
-      const res = await axios.post(APIConn, formData);
-      if (res.data) setBookings(res.data);
-    } catch (err) {
-      console.error("Error fetching bookings:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchBookings();
-  }, []);
 
   const declineBooking = async (bookingId, roomIds) => {
     if (!window.confirm("Decline this booking?")) return;
@@ -80,7 +79,11 @@ export default function OnlineReqList() {
       const response = await axios.post(APIConn, formData);
       if (response.data.success) {
         alert("Booking declined successfully!");
-        fetchBookings();
+        // Refresh bookings after decline
+        const formData = new FormData();
+        formData.append("method", "reqBookingList");
+        const res = await axios.post(APIConn, formData);
+        if (res.data) setBookings(res.data);
       } else {
         alert(`Error: ${response.data.message}`);
       }
@@ -89,19 +92,6 @@ export default function OnlineReqList() {
     }
   };
 
-  const totalRequests = bookings.length;
-  const pendingRequests = bookings.filter(
-    (b) => b.rooms && b.rooms.some((r) => r.status_name?.toLowerCase() === "pending")
-  ).length;
-  const approvedRequests = bookings.filter(
-    (b) => b.rooms && b.rooms.every((r) => r.status_name?.toLowerCase() === "approved")
-  ).length;
-  const totalRevenue = bookings.reduce(
-    (sum, b) => sum + Number(b.booking_downpayment || 0),
-    0
-  );
-
-  // → Step 1 entry point
   const goToSelectRooms = (booking) => {
     const checkInISO = booking.booking_checkin_dateandtime
       ? new Date(booking.booking_checkin_dateandtime).toISOString().slice(0, 10)
@@ -142,11 +132,9 @@ export default function OnlineReqList() {
 
   return (
     <>
-      <div><AdminHeader /></div>
-
+      <AdminHeader />
       <div className="p-6">
         <h1 className="text-xl font-bold mb-6 text-foreground">Online Booking Requests</h1>
-
         <div className="mb-6 flex w-full md:justify-end">
           <div className="w-full md:w-1/3">
             <Input
@@ -157,8 +145,6 @@ export default function OnlineReqList() {
             />
           </div>
         </div>
-
-        {/* Table */}
         <div className="hidden md:block">
           <ScrollArea className="h-[480px] w-full rounded-lg border border-border bg-card shadow-sm">
             <div className="overflow-x-auto">
