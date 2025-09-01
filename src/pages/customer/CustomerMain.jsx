@@ -47,27 +47,38 @@ function CustomerMain() {
   };
 
   return (
-    <div className="flex">
+    <div className="flex min-h-screen bg-gray-50">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block fixed top-0 left-0 h-full w-64 z-50">
+      <div className="hidden md:block fixed top-0 left-0 h-full w-64 z-40 border-r bg-white shadow-sm">
         <CustomerSidebar handleViewChange={handleViewChange} activeIndex={viewIndex} />
       </div>
 
-      {/* Mobile AppBar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#34699a] flex items-center z-50 shadow">
-        <CustomerSidebar handleViewChange={handleViewChange} activeIndex={viewIndex} />
-        <h1 className="text-white text-lg font-semibold ml-4">Hotel Demiren</h1>
+      {/* Mobile Top Bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-[#34699a] flex items-center justify-between px-4 z-50 shadow">
+        {/* Sidebar Drawer Button */}
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-white">
+              <MenuSquareIcon className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-64">
+            <CustomerSidebar handleViewChange={handleViewChange} activeIndex={viewIndex} />
+          </SheetContent>
+        </Sheet>
+
+        <h1 className="text-white text-lg font-semibold">Hotel Demiren</h1>
       </div>
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col min-h-screen md:ml-64">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col md:ml-64">
         {/* Header */}
-        <div className="fixed top-14 md:top-0 left-0 md:left-64 right-0 z-40">
+        <div className="fixed top-14 md:top-0 left-0 md:left-64 right-0 z-30 bg-white shadow-sm">
           <CustomerHeader />
         </div>
 
-        {/* Page content */}
-        <main className="pt-28 md:pt-16 px-6 pb-6 overflow-y-auto flex-1">
+        {/* Page Content */}
+        <main className="pt-28 md:pt-16 px-4 md:px-6 pb-6 flex-1 overflow-y-auto">
           {customerpages[viewIndex]}
         </main>
       </div>

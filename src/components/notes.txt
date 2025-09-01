@@ -51,7 +51,7 @@ data table how to use-----------------------------------------------------------
   ];
 
 
-  <DataTable columns={columns} data={data} itemsPerPage={10} />
+  <DataTable columns={columns} data={data} itemsPerPage={5} />
 
 // mga parameters kung kailangan nimo eh add (optionals)
 const DataTable = ({

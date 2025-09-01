@@ -35,67 +35,27 @@ function FDSidebar() {
                 </Button>
               </Link>
 
-              {/* Profile */}
-              <Link to="/frontdesk/profile" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <User className="w-4 h-4" />
-                  Profile
-                </Button>
-              </Link>
-
-              {/* Rooms List */}
-              <Link to="/frontdesk/roomslist" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <BedIcon className="w-4 h-4" />
-                  Rooms List
-                </Button>
-              </Link>
-
-              {/* Bookings List */}
+              {/* Walk-In Bookings */}
               <Link to="/frontdesk/walkin" className="block w-full">
                 <Button variant="ghost" className="w-full justify-start gap-2">
                   <UserPlusIcon className="w-4 h-4" />
-                  Bookings List
+                  Walk-In Bookings
                 </Button>
               </Link>
 
-              {/* Billings */}
-              <Link to="/frontdesk/billings" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <CreditCardIcon className="w-4 h-4" />
-                  Billings
-                </Button>
-              </Link>
-
-              {/* Guest Profiles */}
-              <Link to="/frontdesk/guests" className="block w-full">
+              {/* Online Reservations */}
+              <Link to="/frontdesk/reservations" className="block w-full">
                 <Button variant="ghost" className="w-full justify-start gap-2">
                   <CalendarCheckIcon className="w-4 h-4" />
-                  Guest Profiles
+                  Online Reservations
                 </Button>
               </Link>
 
-              {/* Request Amenities */}
-              <Link to="/frontdesk/requestedamenities" className="block w-full">
+              {/* Guest Profile */}
+              <Link to="/frontdesk/guestprofile" className="block w-full">
                 <Button variant="ghost" className="w-full justify-start gap-2">
-                  <PillBottleIcon className="w-4 h-4" />
-                  Request Amenities
-                </Button>
-              </Link>
-
-              {/* Transaction History */}
-              <Link to="/frontdesk/transactions" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <HistoryIcon className="w-4 h-4" />
-                  Transaction History
-                </Button>
-              </Link>
-
-              {/* Calendar */}
-              <Link to="/frontdesk/calendar" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <Calendar1Icon className="w-4 h-4" />
-                  Calendar
+                  <User className="w-4 h-4" />
+                  Guest Profile
                 </Button>
               </Link>
 
@@ -107,14 +67,37 @@ function FDSidebar() {
                 </Button>
               </Link>
 
-              {/* Visitors */}
-              <Link to="/frontdesk/visitors" className="block w-full">
+              {/* Room Availability */}
+              <Link to="/frontdesk/availability" className="block w-full">
                 <Button variant="ghost" className="w-full justify-start gap-2">
-                  <User className="w-4 h-4" />
-                  Visitors
+                  <BedIcon className="w-4 h-4" />
+                  Room Availability
                 </Button>
               </Link>
 
+              {/* Requested Amenities */}
+              <Link to="/frontdesk/requestedamenities" className="block w-full">
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <PillBottleIcon className="w-4 h-4" />
+                  Requested Amenities
+                </Button>
+              </Link>
+
+              {/* Calendar View */}
+              <Link to="/frontdesk/calendar" className="block w-full">
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <Calendar1Icon className="w-4 h-4" />
+                  Calendar View
+                </Button>
+              </Link>
+
+              {/* Transaction History */}
+              <Link to="/frontdesk/transactions" className="block w-full">
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <HistoryIcon className="w-4 h-4" />
+                  Transactions
+                </Button>
+              </Link>
             </div>
           </ScrollArea>
 

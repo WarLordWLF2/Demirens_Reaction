@@ -7,7 +7,8 @@ import { toast } from 'sonner'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
 import { Separator } from '@/components/ui/separator'
-import { Bed, BedIcon, Info, MinusIcon, Plus, Trash2, X } from 'lucide-react'
+
+import { BedIcon, Info, MinusIcon, Plus, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import axios from 'axios'
@@ -24,6 +25,7 @@ import {
   FormMessage
 } from "@/components/ui/form"
 import ConfirmBooking from '../ConfirmBooking'
+import Moreinfo from './Moreinfo'
 
 const schema = z.object({
   walkinfirstname: z.string().min(1, { message: "First name is required" }),
@@ -32,28 +34,37 @@ const schema = z.object({
   contactNumber: z.string().min(1, { message: "Contact number is required" }),
 })
 
-function BookingNoAccount({ rooms, selectedRoom, guests }) {
-  const [walkinfirstname, setWalkinfirstname] = useState('');
-  const [walkinlastname, setWalkinlastname] = useState('');
-  const [email, setEmail] = useState('');
-  const [contactNumber, setContactNumber] = useState('');
+function BookingNoAccount({ rooms, selectedRoom, guests, adultNumber, childrenNumber }) {
   const [selectedRooms, setSelectedRooms] = useState([]);
   const [checkIn, setCheckIn] = useState(new Date());
   const [checkOut, setCheckOut] = useState(new Date());
   const [numberOfNights, setNumberOfNights] = useState(1);
   const [open, setOpen] = useState(false)
-  const [guestNumber, setGuestNumber] = useState(0);
   const [allRooms, setAllRooms] = useState([])
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [summaryInfo, setSummaryInfo] = useState(null);
   const [extraBedCounts, setExtraBedCounts] = useState({});
-  const [guestCounts, setGuestCounts] = useState({});
+  // Simple counters for current room selection
+  const [adultCount, setAdultCount] = useState(() => {
+    const stored = parseInt(localStorage.getItem('adultNumber'))
+    return Number.isFinite(stored) ? stored : (adultNumber || 1)
+  });
+  const [childrenCount, setChildrenCount] = useState(() => {
+    const stored = parseInt(localStorage.getItem('childrenNumber'))
+    return Number.isFinite(stored) ? stored : (childrenNumber || 0)
+  });
 
   const onSubmit = async (data) => {
     try {
       const url = localStorage.getItem('url') + "customer.php";
-      const downPayment = (selectedRooms.reduce((total, room) => total + (Number(room.roomtype_price) * numberOfNights), 0) * 1.12 * 0.5).toFixed(2);
-      const room = selectedRooms[0];
+      const subtotal = selectedRooms.reduce((sum, room) => sum + Number(room.roomtype_price) * numberOfNights, 0)
+      // Prices are VAT-inclusive. VAT is shown only, not added to total.
+      const displayedVat = subtotal - (subtotal / 1.12)
+      const totalAmount = subtotal
+      const downPayment = totalAmount * 0.5
+      const currentAdults = adultCount || adultNumber || 1
+      const currentChildren = childrenCount || childrenNumber || 0
+      const totalGuests = currentAdults + currentChildren
 
       const jsonData = {
         customers_walk_in_fname: data.walkinfirstname,
@@ -62,83 +73,86 @@ function BookingNoAccount({ rooms, selectedRoom, guests }) {
         customers_walk_in_phone_number: data.contactNumber,
         booking_checkin_dateandtime: checkIn.toISOString(),
         booking_checkout_dateandtime: checkOut.toISOString(),
-        booking_downpayment: downPayment,
-        roomtype_id: room.room_type,
+        booking_downpayment: downPayment.toFixed(2),
+        roomtype_id: (selectedRooms[0] && (selectedRooms[0].roomtype_id || selectedRooms[0].room_type)) || selectedRoom?.room_type,
         room_count: 1,
+        guest_number: totalGuests,
+        adult_number: currentAdults,
+        children_number: currentChildren,
       };
+
+      console.log('Submitting booking data:', jsonData);
+
       const formData = new FormData();
+      // Optional: include VAT shown to customer for records (not added to total)
+      jsonData.displayed_vat = displayedVat.toFixed(2)
       formData.append("operation", "customerBookingNoAccount");
       formData.append("json", JSON.stringify(jsonData));
 
       const res = await axios.post(url, formData);
 
+      console.log('API response:', res.data);
+
       if (res.data === 1) {
         toast.success("Booking successful! Check your email.");
         setOpen(false);
+        setShowConfirmModal(false);
         localStorage.removeItem('checkIn');
         localStorage.removeItem('checkOut');
+        localStorage.removeItem('adultNumber');
+        localStorage.removeItem('childrenNumber');
         setSelectedRooms([]);
       } else {
         toast.error("Booking failed. Please try again.");
       }
 
     } catch (error) {
-      toast.error("Something went wrong");
-      console.error(error);
-
+      console.error('Booking error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        toast.error(`Booking failed: ${error.response.data || 'Server error'}`);
+      } else if (error.request) {
+        toast.error("Network error. Please check your connection.");
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
     }
-
-
   }
+  
   useEffect(() => {
-    if (open) {
-      const checkInStr = localStorage.getItem('checkIn')
-      const checkOutStr = localStorage.getItem('checkOut')
-      const guestNum = parseInt(localStorage.getItem('guestNumber')) || 1;
+    if (!open) return
+    const checkInStr = localStorage.getItem('checkIn')
+    const checkOutStr = localStorage.getItem('checkOut')
+    const checkInDate = checkInStr ? new Date(checkInStr) : new Date()
+    const checkOutDate = checkOutStr ? new Date(checkOutStr) : new Date()
+    setCheckIn(checkInDate)
+    setCheckOut(checkOutDate)
 
-      const checkInDate = new Date(checkInStr)
-      const checkOutDate = new Date(checkOutStr)
-      setCheckIn(checkInDate)
-      setCheckOut(checkOutDate)
+    const diffTime = checkOutDate.getTime() - checkInDate.getTime()
+    const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
+    setNumberOfNights(diffDays)
 
-      // Calculate number of gabii
-      const diffTime = checkOutDate.getTime() - checkInDate.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) // convert ms to days
-
-      setNumberOfNights(diffDays)
-
-      setAllRooms(rooms)
+    setAllRooms(rooms)
+    if (selectedRoom) {
       setSelectedRooms([{
         roomtype_name: selectedRoom.roomtype_name,
         roomtype_price: selectedRoom.roomtype_price,
-        room_type: selectedRoom.room_type,
+        roomtype_id: selectedRoom.room_type,
         roomtype_description: selectedRoom.roomtype_description,
-        max_capacity: selectedRoom.max_capacity // ✅ add this line
+        max_capacity: selectedRoom.max_capacity,
+        room_type: selectedRoom.room_type,
       }])
-
-      // ✅ Clamp guest number to max_capacity
-      const validGuestNum = Math.min(guestNum, selectedRoom.max_capacity);
-      setGuestNumber(validGuestNum);
-
-      setGuestCounts({
-        [selectedRoom.room_type]: validGuestNum
-      });
-
     }
-  }, [open, rooms, selectedRoom]);
 
-  useEffect(() => {
-    const updatedCounts = { ...guestCounts };
-    selectedRooms.forEach(room => {
-      if (!updatedCounts[room.room_type]) {
-        updatedCounts[room.room_type] = Math.min(
-          parseInt(localStorage.getItem('guestNumber')) || 1,
-          room.max_capacity || 1
-        );
-      }
-    });
-    setGuestCounts(updatedCounts);
-  }, [selectedRooms]);
+    const initAdults = adultNumber || parseInt(localStorage.getItem('adultNumber')) || 1
+    const initChildren = childrenNumber || parseInt(localStorage.getItem('childrenNumber')) || 0
+    setAdultCount(initAdults)
+    setChildrenCount(initChildren)
+  }, [open, rooms, selectedRoom, adultNumber, childrenNumber])
+
+  const maxCapacity = selectedRooms[0]?.max_capacity || selectedRoom?.max_capacity || 1
+  const totalGuestsNow = adultCount + childrenCount
+  const canIncrement = totalGuestsNow < maxCapacity
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -156,7 +170,6 @@ function BookingNoAccount({ rooms, selectedRoom, guests }) {
     setSelectedRooms(updatedRooms);
 
     if (updatedRooms.length === 0) {
-      setGuestNumber(0);
       setNumberOfNights(1);
       toast.info("Room selection cleared!");
     } else {
@@ -170,35 +183,31 @@ function BookingNoAccount({ rooms, selectedRoom, guests }) {
 
       <Sheet open={open} onOpenChange={setOpen} >
         <SheetTrigger asChild>
-          <Button className="w-full  bg-[#FDF5AA] hover:bg-yellow-600 text-black">Book Now</Button>
+          <Button>Book Now</Button>
         </SheetTrigger>
-        <SheetContent side="bottom" className="!bg-[#113F67] text-white p-6 border-none rounded-t-3xl ">
-          <ScrollArea className="h-[100vh] md:h-[calc(100vh-300px)]" >
+        <SheetContent side="bottom" className="p-6 border-none rounded-t-3xl bg-white">
+          <ScrollArea className="h-[100vh] md:h-[calc(100vh-300px)]">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 mb-2 p-4">
-                  <Card className="bg-transparent shadow-2xl">
+                <div className="grid grid-cols-1 gap-4 mt-2 mb-2 p-4">
+                  <Card className="bg-white shadow-xl">
                     <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4  text-white">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-
-                          <Label className="mb-3">Check In</Label>
-                          <Input
-                            value={checkIn}
-                            readOnly
-                          />
+                          <Label className="mb-2">Check-in</Label>
+                          <Input value={checkIn.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })} readOnly />
                         </div>
-                        <div >
-                          <Label className="mb-3">Check Out</Label>
-                          <Input
-                            value={checkOut}
-                            readOnly
-                          />
+                        <div>
+                          <Label className="mb-2">Check-out</Label>
+                          <Input value={checkOut.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })} readOnly />
                         </div>
 
 
-                        <div >
 
+
+
+
+                        <div>
                           <FormField
                             control={form.control}
                             name="walkinfirstname"
@@ -213,7 +222,7 @@ function BookingNoAccount({ rooms, selectedRoom, guests }) {
                             )}
                           />
                         </div>
-                        <div >
+                        <div>
                           <FormField
                             control={form.control}
                             name="walkinlastname"
@@ -228,7 +237,7 @@ function BookingNoAccount({ rooms, selectedRoom, guests }) {
                             )}
                           />
                         </div>
-                        <div >
+                        <div>
                           <FormField
                             control={form.control}
                             name="email"
@@ -243,7 +252,7 @@ function BookingNoAccount({ rooms, selectedRoom, guests }) {
                             )}
                           />
                         </div>
-                        <div >
+                        <div>
                           <FormField
                             control={form.control}
                             name="contactNumber"
@@ -263,40 +272,24 @@ function BookingNoAccount({ rooms, selectedRoom, guests }) {
                     </CardContent>
 
                   </Card>
-                  <Card className="min-w-[900px] mt-3 bg-[#113F67] border-none shadow-2xl">
-                    <CardContent className="p-4 space-y-2">
-                      <div className="flex items-center gap-8 text-white">
-                        <div className="flex items-center gap-2">
-                          <X className="text-red-500" />
-                          <h1>NO PETS ALLOWED</h1>
-
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <X className="text-red-500" />
-                          <h1>NO SMOKING</h1>
-
-                        </div>
 
 
-                      </div>
-                    </CardContent>
-                  </Card>
+
 
 
 
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex justify-end">
-                    <RoomsList rooms={allRooms} selectedRooms={selectedRooms} setSelectedRooms={setSelectedRooms} />
-                  </div>
 
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
 
-                  <Card className="bg-transparent shadow-2xl text-white">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+
+                  <Card className="bg-white shadow-xl">
                     <CardContent>
-                      <ScrollArea className="h-[calc(100vh-300px)]">
+                      <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-lg font-semibold">Selected Room</h2>
+                        <RoomsList rooms={allRooms} selectedRooms={selectedRooms} setSelectedRooms={setSelectedRooms} />
+                      </div>
+                      <ScrollArea className="h-[calc(100vh-320px)]">
                         <div >
                           {selectedRooms.length > 0 ? (
                             <>
@@ -310,62 +303,81 @@ function BookingNoAccount({ rooms, selectedRoom, guests }) {
                                   </div>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ">
                                     <div>
-                                      <h1 className="font-semibold text-2xl">{room.roomtype_name}</h1>
-                                      <h1>{room.roomtype_description}</h1>
+                                      <h1 className="font-semibold text-2xl text-blue-600 font-playfair">{room.roomtype_name}</h1>
+                                      <p className="text-sm text-muted-foreground">{room.roomtype_description}</p>
                                       <Link>
-                                        <div className="flex flex-row space-x-2 text-[#0D1423]">
-                                          <div>
-                                            More info
-                                          </div>
-                                          <div>
-                                            <Info />
-                                          </div>
-
+                                        <div className="flex flex-row items-center gap-2 mt-3 mb-2 text-blue-600">
+                                          <Moreinfo room={room} />
+                                          <Info size={18} />
                                         </div>
                                       </Link>
-                                      <h1 className="font-semibold text-blue-500"> ₱ {Number(room.roomtype_price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h1>
-                                      <div className="mt-4">
-                                        <Label className={"mb-2"}>Number of Guests</Label>
-                                        <div className="flex items-center justify-start space-x-2">
-                                          <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() =>
-                                              setGuestCounts(prev => ({
-                                                ...prev,
-                                                [room.room_type]: Math.max((prev[room.room_type] || 1) - 1, 1),
-                                              }))
-                                            }
-                                            disabled={(guestCounts[room.room_type] || 1) <= 1}
-                                          >
-                                            <MinusIcon />
-                                          </Button>
-
-                                          <Input
-                                            className="w-1/4 text-center"
-                                            type="number"
-                                            readOnly
-                                            value={guestCounts[room.room_type] || 1}
-                                          />
-
-                                          <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() =>
-                                              setGuestCounts(prev => ({
-                                                ...prev,
-                                                [room.room_type]: Math.min(
-                                                  (prev[room.room_type] || 1) + 1,
-                                                  room.max_capacity || 1
-                                                ),
-                                              }))
-                                            }
-                                            disabled={(guestCounts[room.room_type] || 1) >= (room.max_capacity || 1)}
-                                          >
-                                            <Plus />
-                                          </Button>
+                                      <h1 className="font-semibold text-blue-600">₱ {Number(room.roomtype_price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h1>
+                                    
+                                      <div className="mt-4 space-y-3">
+                                        <div>
+                                          <Label className="mb-2">Adults</Label>
+                                          <div className="flex items-center justify-start gap-2">
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              onClick={() => {
+                                                const val = Math.max(1, adultCount - 1)
+                                                setAdultCount(val)
+                                                localStorage.setItem('adultNumber', String(val))
+                                              }}
+                                              disabled={adultCount <= 1}
+                                            >
+                                              <MinusIcon size={16} />
+                                            </Button>
+                                            <div className="w-12 text-center font-medium">{adultCount}</div>
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              onClick={() => {
+                                                if (!canIncrement) return toast.info(`Max capacity ${maxCapacity}`)
+                                                const val = adultCount + 1
+                                                setAdultCount(val)
+                                                localStorage.setItem('adultNumber', String(val))
+                                              }}
+                                              disabled={!canIncrement}
+                                            >
+                                              <Plus size={16} />
+                                            </Button>
+                                          </div>
                                         </div>
 
+                                        <div>
+                                          <Label className="mb-2">Children</Label>
+                                          <div className="flex items-center justify-start gap-2">
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              onClick={() => {
+                                                const val = Math.max(0, childrenCount - 1)
+                                                setChildrenCount(val)
+                                                localStorage.setItem('childrenNumber', String(val))
+                                              }}
+                                              disabled={childrenCount <= 0}
+                                            >
+                                              <MinusIcon size={16} />
+                                            </Button>
+                                            <div className="w-12 text-center font-medium">{childrenCount}</div>
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              onClick={() => {
+                                                if (!canIncrement) return toast.info(`Max capacity ${maxCapacity}`)
+                                                const val = childrenCount + 1
+                                                setChildrenCount(val)
+                                                localStorage.setItem('childrenNumber', String(val))
+                                              }}
+                                              disabled={!canIncrement}
+                                            >
+                                              <Plus size={16} />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">Max capacity: {maxCapacity} guests</p>
                                       </div>
                                     </div>
 
@@ -393,63 +405,57 @@ function BookingNoAccount({ rooms, selectedRoom, guests }) {
 
 
                                   </div>
-                                  <div >
-
-
-                                    <Card className="w-full mt-2 bg-[#113F67] border-none text-white">
+                                  <div>
+                                    <Card className="w-full mt-2">
                                       <CardContent>
-                                        <div className="flex items-center justify-between w-full gap-4">
+                                        <div className="flex items-center justify-between w-full ">
 
-                                          {/* Label + Icon + Title */}
                                           <div className="flex flex-col">
                                             <Label>Extra</Label>
                                             <div className="flex items-center gap-2">
-                                              <h1><BedIcon /></h1>
-                                              <h1>Extra Bed</h1>
+                                              <BedIcon size={18} />
+                                              <span>Extra Bed</span>
                                             </div>
                                           </div>
 
-                                          {/* Price */}
                                           <div className="flex flex-col items-end">
                                             <Label>Price</Label>
                                             <h1 className="text-blue-500 whitespace-nowrap">₱ 500.00</h1>
                                           </div>
 
-                                          {/* Quantity */}
                                           <div className="flex flex-col items-center">
                                             <Label>Quantity</Label>
                                             <div className="flex items-center space-x-2 mt-2">
                                               <Button
                                                 type="button"
                                                 variant="outline"
-                                              // disabled={guestNumber === 0}
+                                                onClick={() => {
+                                                  const id = room.room_type || room.roomtype_id
+                                                  const current = extraBedCounts[id] || 0
+                                                  const next = Math.max(0, current - 1)
+                                                  setExtraBedCounts({ ...extraBedCounts, [id]: next })
+                                                }}
                                               >
-                                                <MinusIcon />
+                                                <MinusIcon size={16} />
                                               </Button>
-                                              <Input
-                                                className="w-16 text-center"
-                                                type="number"
-                                                readOnly
-                                              // value={guestNumber}
-                                              />
+                                              <div className="w-12 text-center font-medium">{extraBedCounts[room.room_type || room.roomtype_id] || 0}</div>
                                               <Button
                                                 type="button"
                                                 variant="outline"
-                                              //  onClick={() => setGuestNumber(guestNumber + 1)}
+                                                onClick={() => {
+                                                  const id = room.room_type || room.roomtype_id
+                                                  const current = extraBedCounts[id] || 0
+                                                  const next = current + 1
+                                                  setExtraBedCounts({ ...extraBedCounts, [id]: next })
+                                                }}
                                               >
-                                                <Plus />
+                                                <Plus size={16} />
                                               </Button>
                                             </div>
                                           </div>
-
-
-
                                         </div>
                                       </CardContent>
                                     </Card>
-
-
-
                                   </div>
                                   <Separator className="w-full mt-4" />
                                 </div>
@@ -461,119 +467,107 @@ function BookingNoAccount({ rooms, selectedRoom, guests }) {
                           )}
                         </div>
                       </ScrollArea>
-
-
-
-
                     </CardContent>
-
                   </Card>
-                  <div className=" space-y-3 ">
-                    <Card className="bg-transparent shadow-2xl text-white">
-                      <CardContent className="space-y-3">
-                        <h1 className="font-semibold text-lg">BOOKING SUMMARY</h1>
-                        {selectedRooms.length > 0 ? selectedRooms.map((room, index) => (
-                          <div>
-
-                            <div key={index} className="flex justify-between">
-                              <h1 className="font-semibold ">{room.roomtype_name}</h1>
-                              <h1 >₱ {(Number(room.roomtype_price) * numberOfNights).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h1>
-
-
+                  <div className="space-y-3 md:sticky md:top-4 h-fit">
+                    <Card className="bg-white shadow-xl">
+                      <CardContent className="space-y-3 text-black">
+                        <h1 className="font-semibold text-lg">Booking Summary</h1>
+                        {selectedRooms.length > 0 && selectedRooms.map((room, index) => (
+                          <div key={index}>
+                            <div className="flex justify-between items-center py-2">
+                              <h2 className="font-medium">Room Type: {room.roomtype_name}</h2>
+                              <p className="text-right font-semibold text-xl">{`${numberOfNights} Day(s) x ₱ ${(room.roomtype_price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</p>
                             </div>
-
-                            <h1 className="text-end text-sm">{`(${numberOfNights} Nights x ₱ ${(room.roomtype_price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}</h1>
-
                             <Separator className="w-full mt-4" />
                           </div>
-
-                        )) : null}
-
-
-                        <div className="flex justify-between">
-
-
-                          <h1 className="font-semibold ">Sub Total</h1>
-                          <h1 className="font-semibold ">₱ {(selectedRooms.reduce((total, room) => total + Number(room.roomtype_price) * numberOfNights, 0)).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h1>
-                        </div>
-                        <div className="flex justify-between ">
-                          <h1 className="font-semibold">VAT (12%):</h1>
-                          <h1 className='font-semibold'>₱ {(selectedRooms.reduce((total, room) => total + Number(room.roomtype_price) * numberOfNights, 0) * 0.12).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h1>
-
-                        </div>
-                        <div className="flex justify-end">
-                          <hr className="w-1/5 h-1 bg-black border-none" />
-                        </div>
-
-                        <div className="flex justify-between ">
-                          <h1 className="font-semibold">Total Amount:</h1>
-                          <h1 className="font-semibold">
-                            ₱ {(
-                              selectedRooms.reduce((total, room) => total + Number(room.roomtype_price) * numberOfNights, 0) * 1.12
-                            ).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </h1>
-
-                        </div>
-                        <div>
-                          <div className="flex justify-between">
-
-                            <h1 className="font-semibold text-red-500">Down Payment: </h1>
-                            <h1 className="font-semibold text-red-500">₱ {((selectedRooms.reduce((total, room) => total + Number(room.roomtype_price) * numberOfNights, 0) * 1.12) * 0.5).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h1>
-
-                          </div>
-                          <h1 className="text-red-500">{`(50% of  total amount)`}</h1>
-                        </div>
-
+                        ))}
+                        {(() => {
+                        const subtotal = selectedRooms.reduce((t, r) => t + Number(r.roomtype_price) * numberOfNights, 0);
+                        const vat = subtotal - (subtotal / 1.12); 
+                          const total = subtotal
+                          const down = total * 0.5
+                          return (
+                            <>
+                           
+                              <div className="flex justify-between items-center py-2 ">
+                                <span className="font-medium">VAT (12%) included</span>
+                                <span>₱ {vat.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
+                              <div className="flex justify-between items-center py-2">
+                                <span className="font-semibold">Total (VAT included):</span>
+                                <span className="font-semibold text-2xl">₱ {total.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
+                              <div className="flex justify-between items-center py-2">
+                                <span className="font-semibold">Down Payment (50%):</span>
+                                <span className="font-semibold text-2xl text-blue-600">₱ {down.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
+                            </>
+                          )
+                        })()}
                       </CardContent>
-
                     </Card>
-                    <Card className="bg-transparent shadow-2xl text-white">
-                      <CardContent>
-                        <h1>PAYMENT METHOD</h1>
+                    <Card className="bg-white shadow-xl">
+                      <CardContent className="space-y-2">
+                        <h2 className="font-semibold">Payment Method</h2>
+                        <p className="text-sm text-muted-foreground">You will receive payment instructions after confirming your booking.</p>
                       </CardContent>
-
                     </Card>
+
                     <Button
-                      className="bg-[#FDF5AA] hover:bg-yellow-600 text-black"
-
+                      type="button"
                       onClick={() => {
-                        if (selectedRooms.length === 0) return;
+                        // First validate the form
+                        form.handleSubmit((data) => {
+                          if (selectedRooms.length === 0) return;
 
-                        const subtotal = selectedRooms.reduce(
-                          (sum, room) => sum + Number(room.roomtype_price) * numberOfNights,
-                          0
-                        );
-                        const vat = subtotal * 0.12;
-                        const total = subtotal + vat;
-                        const downpayment = total * 0.5;
+                          const subtotal = selectedRooms.reduce(
+                            (sum, room) => sum + Number(room.roomtype_price) * numberOfNights,
+                            0
+                          );
+                          const vat = subtotal - (subtotal / 1.12);
+                          const total = subtotal;
+                          const downpayment = total * 0.5;
 
-                        setSummaryInfo({
-                          rooms: selectedRooms.map(room => ({
-                            ...room,
-                            guestCount: guestCounts[room.room_type] || 1,
-                            extraBeds: extraBedCounts[room.room_type] || 0,
-                          })),
+                          setSummaryInfo({
+                            rooms: selectedRooms.map(room => {
+                              const currentAdults = adultCount || 1;
+                              const currentChildren = childrenCount || 0;
+                              const totalGuests = currentAdults + currentChildren;
 
-                          checkIn,
-                          checkOut,
-                          numberOfNights,
-                          vat,
-                          total,
-                          downpayment,
-                        });
+                              return {
+                                ...room,
+                                guestCount: totalGuests,
+                                adultCount: currentAdults,
+                                childrenCount: currentChildren,
+                                extraBeds: extraBedCounts[room.room_type || room.roomtype_id] || 0,
+                              };
+                            }),
 
-                        setShowConfirmModal(true);
+                            checkIn,
+                            checkOut,
+                            numberOfNights,
+                            vat,
+                            total,
+                            downpayment,
+                          });
+
+                          setShowConfirmModal(true);
+                        })();
                       }}
                     >
                       Confirm Booking
                     </Button>
 
-                    <ConfirmBooking
-                      open={showConfirmModal}
-                      onOpenChange={setShowConfirmModal}
-                      summary={summaryInfo}
-                      onConfirmBooking={onSubmit}
-                    />
+                    {showConfirmModal &&
+                      <ConfirmBooking
+                        open={() => setShowConfirmModal(true)}
+                        onClose={() => setShowConfirmModal(false)}
+                        // onOpenChange={setShowConfirmModal}
+                        summary={summaryInfo}
+                        onConfirmBooking={onSubmit}
+                      />
+                    }
 
                   </div>
 
