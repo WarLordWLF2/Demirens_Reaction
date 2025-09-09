@@ -157,8 +157,9 @@ function App() {
                 <Route path="/BookingChargesList" element={<BookingChargesList />} />
                 <Route path="/BookingCreateInvoice" element={<BookingCreateInvoice />} />
                 <Route path="/BookingDisplayInvoiceSample" element={<BookingDisplayInvoiceSample />} />
-                {/* Customer Route */}
 
+
+                {/* Customer Route */}
                 <Route path="/customer/about" element={<CustomerAbout />} />
                 <Route path="/customer/bookings" element={<CustomerBooking />} />
                 <Route path="/customer/rooms" element={<CustomerRooms />} />

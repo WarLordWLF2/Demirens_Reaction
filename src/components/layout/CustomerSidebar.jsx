@@ -3,8 +3,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet';
 import {
@@ -20,12 +18,47 @@ import {
   User
 } from 'lucide-react';
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const CustomerSidebar = ({ handleViewChange, activeIndex }) => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogOut = () => {
+    try {
+      // Clear all user-specific localStorage items
+      localStorage.removeItem('userId');
+      localStorage.removeItem('customerOnlineId');
+      localStorage.removeItem('fname');
+      localStorage.removeItem('lname');
+      localStorage.removeItem('viewIndex');
+      
+      // Clear booking-related localStorage items
+      localStorage.removeItem('checkIn');
+      localStorage.removeItem('checkOut');
+      localStorage.removeItem('guestNumber');
+      localStorage.removeItem('children');
+      localStorage.removeItem('adult');
+      localStorage.removeItem('refreshBookings');
+      
+      // Show success message
+      toast.success('Successfully logged out');
+      
+      // Redirect to login page
+      setTimeout(() => {
+        navigate('/login');
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Something went wrong during logout');
+    }
+  };
 
   const SidebarLink = ({ icon, label, index }) => {
     const isActive = activeIndex === index;
+
     return (
       <Button
         variant="ghost"
@@ -78,7 +111,7 @@ const CustomerSidebar = ({ handleViewChange, activeIndex }) => {
         <Button
           variant="destructive"
           className="w-full justify-start text-white"
-          onClick={() => console.log('Logout')}
+          onClick={handleLogOut}
         >
           <LogOutIcon className="w-4 h-4 mr-2" />
           Logout

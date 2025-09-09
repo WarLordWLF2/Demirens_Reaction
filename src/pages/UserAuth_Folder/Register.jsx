@@ -30,14 +30,15 @@ const Register = () => {
   useEffect(() => {
     const allNationalities = async () => {
       const formData = new FormData();
-      formData.append("operation", "getAllNationalities");
+      formData.append("operation", "getNationality");
 
       try {
         const url = localStorage.getItem("url") + "customer.php";
         const res = await axios.post(url, formData);
+        console.log("res ni allNationalities", res);
 
-        if (res.data?.success && Array.isArray(res.data.data)) {
-          setGetNationalities(res.data.data);
+        if (res.data !== 0 ) {
+          setGetNationalities(res.data);
         } else {
           toast.error("Failed to load nationalities");
         }
