@@ -75,7 +75,7 @@ export default function ApprovalReceipt() {
       const res = await axios.post(APIConn, fd);
       if (res.data?.success) {
         alert("Booking approved successfully!");
-        // navigate("/admin/online");
+        navigate("/admin/online");
       } else {
         alert(`Error: ${res.data?.message || "Unknown error"}`);
       }
