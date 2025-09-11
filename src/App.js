@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 
-import LandingHeader from './components/layout/LandingHeader';
 
 
 import AdminRoomsList from './pages/admin/AdminRoomsList';
@@ -42,24 +41,20 @@ import { WalkInProvider } from './pages/admin/WalkIn_Folder/WalkInContext';
 import Login from './pages/UserAuth_Folder/Login';
 import Register from './pages/UserAuth_Folder/Register';
 import OTP_Auth from './pages/UserAuth_Folder/OTP_Auth';
+import ForgotPassword from './pages/UserAuth_Folder/ForgotPassword';
+import ResetPassword from './pages/UserAuth_Folder/ResetPassword';
 
 import CustomerAbout from './pages/customer/CustomerAbout';
 import CustomerBooking from './pages/customer/CustomerBooking';
 import CustomerRooms from './pages/customer/CustomerRooms';
 import CustomerGallery from './pages/customer/CustomerGallery';
 import CustomerRestaurant from './pages/customer/CustomerRestaurant';
-import Footer from './components/layout/Footer';
 import { useEffect } from 'react';
-import CustomerHeader from './components/layout/CustomerHeader';
 import CustomerMain from './pages/customer/CustomerMain';
 import { Toaster } from 'sonner';
-import { Check, CheckCircle2Icon, XCircleIcon } from 'lucide-react';
+import { CheckCircle2Icon, XCircleIcon } from 'lucide-react';
 
 // Frontdesk Side
-import FrontdeskLogin from './pages/frontdesk/FrontdeskLogin';
-import FrontdeskDashboard from './pages/frontdesk/FrontdeskDashboard';
-import FrontdeskWalkin from './pages/frontdesk/FrontdeskWalkin';
-import FrontdeskReservation from './pages/frontdesk/FrontdeskResvation';
 import CustomerRoomView from './pages/customer/CustomerRoomView';
 import RoomSearch from './pages/customer/RoomSearch';
 import BookingChargesMaster from './pages/frontdesk/BookingChargesMaster';
@@ -112,6 +107,8 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify" element={<OTP_Auth />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
                 {/* Admin Pages */}
                 <Route path="/" element={<Landingpage />} />

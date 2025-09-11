@@ -179,7 +179,9 @@ function Login() {
                                                         <Input type="password" placeholder="Enter Password" {...field} />
                                                     </FormControl>
                                                     <div className="flex justify-end">
-                                                        <Button variant="link" >Forgot Password?</Button>
+                                                        <Button variant="link" asChild>
+                                                            <Link to="/forgot-password">Forgot Password?</Link>
+                                                        </Button>
                                                     </div>
 
                                                     <FormMessage />
