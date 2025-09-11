@@ -25,6 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CalendarIcon, Search, Filter, ArrowRightLeft, Eye, Settings } from "lucide-react"
 import { format } from "date-fns"
+import { formatDateTime } from "@/lib/utils"
 import RoomChangeSheet from "./SubPages/RoomChangeSheet"
 
 function AdminBookingList() {
@@ -514,10 +515,10 @@ function AdminBookingList() {
                             {b.customer_name}
                           </TableCell>
                           <TableCell className="text-gray-700 dark:text-gray-300">
-                            {b.booking_checkin_dateandtime}
+                            {formatDateTime(b.booking_checkin_dateandtime)}
                           </TableCell>
                           <TableCell className="text-gray-700 dark:text-gray-300">
-                            {b.booking_checkout_dateandtime}
+                            {formatDateTime(b.booking_checkout_dateandtime)}
                           </TableCell>
                           <TableCell className="text-gray-700 dark:text-gray-300">
                             {renderOrPending(b.room_numbers)}
@@ -614,11 +615,11 @@ function AdminBookingList() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Check-in Date</label>
-                      <p className="text-gray-900 dark:text-white">{selectedBooking.booking_checkin_dateandtime || 'N/A'}</p>
+                      <p className="text-gray-900 dark:text-white">{formatDateTime(selectedBooking.booking_checkin_dateandtime)}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Check-out Date</label>
-                      <p className="text-gray-900 dark:text-white">{selectedBooking.booking_checkout_dateandtime || 'N/A'}</p>
+                      <p className="text-gray-900 dark:text-white">{formatDateTime(selectedBooking.booking_checkout_dateandtime)}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Room Numbers</label>

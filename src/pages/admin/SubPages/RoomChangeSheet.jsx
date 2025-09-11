@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, AlertCircle, Search, X } from "lucide-react";
 import axios from 'axios';
+import { formatDateTime } from '@/lib/utils';
 
 function RoomChangeSheet({
   isOpen,
@@ -325,13 +326,13 @@ function RoomChangeSheet({
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Check-in</Label>
                   <p className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm">
-                    {selectedBooking.booking_checkin_dateandtime}
+                    {formatDateTime(selectedBooking.booking_checkin_dateandtime)}
                   </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Check-out</Label>
                   <p className="text-gray-700 dark:text-gray-300 text-xs sm:text-sm">
-                    {selectedBooking.booking_checkout_dateandtime}
+                    {formatDateTime(selectedBooking.booking_checkout_dateandtime)}
                   </p>
                 </div>
               </div>
