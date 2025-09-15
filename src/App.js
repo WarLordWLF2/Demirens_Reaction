@@ -14,11 +14,11 @@ import AdminRequestedAmenities from './pages/admin/AdminRequestedAmenities';
 import AdminReviews from './pages/admin/AdminReviews';
 import AdminTransactionHis from './pages/admin/AdminTransactionHis';
 import AdminVisitorsLog from './pages/admin/AdminVisitorsLog';
-import AdminAmenityMaster from './pages/admin/AdminAmenityMaster';
-import AdminChargesCategory from './pages/admin/AdminChargesCategory';
-import AdminChargeMaster from './pages/admin/AdminChargeMaster';
-import AdminDiscountMaster from './pages/admin/AdminDiscountMaster';
-import AdminRoomtype from './pages/admin/AdminRoomtype';
+import AdminAmenityMaster from './pages/admin/Master_Files/AmenityMaster';
+import AdminChargesCategory from './pages/admin/Master_Files/ChargesCategory';
+import AdminChargeMaster from './pages/admin/Master_Files/ChargeMaster';
+import AdminDiscountMaster from './pages/admin/Master_Files/DiscountMaster';
+import AdminRoomtype from './pages/admin/Master_Files/RoomTypeMaster';
 import AdminNewBook from './pages/admin/WalkIn_Folder/AddWalkIn';
 import Landingpage from './pages/Landingpage';
 import Billings from './pages/admin/Billings';
@@ -124,11 +124,13 @@ function App() {
                 <Route path="/admin/reviews" element={<AdminReviews />} />
                 <Route path="/admin/transactionhistory" element={<AdminTransactionHis />} />
                 <Route path="/admin/visitorslog" element={<AdminVisitorsLog />} />
+
                 <Route path="/admin/amenitymaster" element={<AdminAmenityMaster />} />
                 <Route path="/admin/chargescategory" element={<AdminChargesCategory />} />
                 <Route path="/admin/chargemaster" element={<AdminChargeMaster />} />
                 <Route path="/admin/discountmaster" element={<AdminDiscountMaster />} />
                 <Route path="/admin/roomtypemaster" element={<AdminRoomtype />} />
+
                 <Route path="/admin/billings" element={<Billings />} />
                 <Route path="/admin/invoice" element={<Invoice />} />
 

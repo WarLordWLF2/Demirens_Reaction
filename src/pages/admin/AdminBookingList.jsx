@@ -51,12 +51,12 @@ function AdminBookingList() {
   const getAllStatus = useCallback(async () => {
     const formData = new FormData();
     formData.append('method', 'getAllStatus');
-    formData.append('json', JSON.stringify({}));
 
     try {
       const res = await axios.post(APIConn, formData);
       if (res.data) {
         setStatus(res.data);
+        console.log('Existing Statuses: ', res.data);
       } else {
         toast.error('Failed to connect');
       }
@@ -65,6 +65,7 @@ function AdminBookingList() {
       console.log(err);
     }
   }, [APIConn]);
+  
 
   const getBookings = useCallback(async () => {
     try {
@@ -145,7 +146,7 @@ function AdminBookingList() {
   const fetchAvailableRooms = async () => {
     try {
       const formData = new FormData();
-      formData.append("method", "view_rooms");
+      formData.append("method", "viewRooms");
       formData.append("json", JSON.stringify({}));
       const res = await axios.post(APIConn, formData);
       const data = Array.isArray(res.data) ? res.data : [];
