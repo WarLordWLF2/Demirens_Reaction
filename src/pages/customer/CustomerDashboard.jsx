@@ -18,6 +18,7 @@ import BookingWaccount from './modals/sheets/BookingWaccount'
 import DatePicker from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
 import { Link, useNavigate } from 'react-router-dom'
+import Moreinfo from './modals/sheets/Moreinfo';
 
 
 
@@ -88,9 +89,9 @@ function CustomerDashboard() {
     }
   }
   const handleClearData = () => {
-    form.reset({checkIn:"", checkOut: ""})
-    setAdultNumber (0);
-    setChildrenNumber (0);
+    form.reset({ checkIn: "", checkOut: "" })
+    setAdultNumber(0);
+    setChildrenNumber(0);
     localStorage.removeItem("checkIn");
     localStorage.removeItem("checkOut");
     localStorage.removeItem("guestNumber");
@@ -159,16 +160,19 @@ function CustomerDashboard() {
                   />
 
                   <div>
-                    <Label className={"mb-2 "}>Adults</Label>
-                    <div className="flex items-center justify-start space-x-2">
+                    <Label className={"mb-2 items-center justify-center"}>Adults</Label>
+                    <div className="flex items-center justify-center space-x-2">
 
                       <Button type="button" variant="outline" onClick={() => setAdultNumber(adultNumber - 1)} disabled={adultNumber === 0}><MinusIcon /></Button>
-                      <Input
+                      <div>
+                        {adultNumber}
+                      </div>
+                      {/* <Input
                         className="w-1/4"
                         type="number"
                         readOnly
                         value={adultNumber}
-                      />
+                      /> */}
                       <Button type="button" variant="outline" onClick={() => setAdultNumber(adultNumber + 1)}><Plus /></Button>
 
                     </div>
@@ -179,12 +183,16 @@ function CustomerDashboard() {
                     <div className="flex items-center justify-start space-x-2">
 
                       <Button type="button" variant="outline" onClick={() => setChildrenNumber(childrenNumber - 1)} disabled={childrenNumber === 0}><MinusIcon /></Button>
-                      <Input
+                      <div>
+                        {childrenNumber}
+                      </div>
+
+                      {/* <Input
                         className="w-1/4"
                         type="number"
                         readOnly
                         value={childrenNumber}
-                      />
+                      /> */}
                       <Button type="button" variant="outline" onClick={() => setChildrenNumber(childrenNumber + 1)}><Plus /></Button>
                     </div>
                   </div>
@@ -218,30 +226,30 @@ function CustomerDashboard() {
           </p>
         ) : (
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 w-full">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 w-full">
             {rooms.map((room, index) => (
-
-
-              <Card key={index} className="flex flex-col h-full rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300 border  bg-sky-100">
+              <Card key={index} className="flex flex-col h-full rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-100 bg-gradient-to-b from-white to-sky-50 overflow-hidden transform hover:-translate-y-1">
 
                 {/* Image Section */}
-                <div className="h-[30vh] w-full overflow-hidden ">
-                  <img src={room.image_url} alt="Room" className="w-full h-full object-cover" />
-
+                <div className="w-full h-56 overflow-hidden relative">
+                  <img
+                    src={localStorage.getItem("url") + "images/" + room.roomtype_image}
+                    alt="Room"
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                  />
+                  <div className="absolute top-0 right-0 m-2">
+                    <Badge className="bg-blue-600 text-white font-medium px-3 py-1">
+                      Available
+                    </Badge>
+                  </div>
                 </div>
 
                 {/* Info Section */}
-                <div className="flex flex-col p-4 flex-1">
-                  <h5 className="text-4xl font-semibold mb-2">{room.roomtype_name}</h5>
-                  {/* <Button
-                    variant="link"
-                    className="w-full justify-start"
+                <div className="flex flex-col p-5 flex-1">
+                  <h5 className="text-2xl sm:text-3xl font-bold mb-2 text-blue-900 tracking-tight">{room.roomtype_name}</h5>
 
-                  >
-                    View Room →
-                  </Button> */}
                   <p
-                    className="text-sm text-gray-600 mb-4 overflow-hidden"
+                    className="text-sm md:text-base text-gray-700 mb-4 overflow-hidden leading-relaxed font-light"
                     style={{
                       display: '-webkit-box',
                       WebkitLineClamp: 3, // bilang sa lines na ipakita
@@ -250,30 +258,30 @@ function CustomerDashboard() {
                   >
                     {room.roomtype_description}
                   </p>
-                  <div className="flex items-center justify-between mb-4">
-                    {/* Price + Moon icon */}
-                    <h2 className="text-xl font-bold text-blue-600 flex items-center gap-1">
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                    {/* Price + Bed icon */}
+                    <h2 className="flex-col text-sm font-bold text-blue-600 flex items-center gap-1 bg-blue-50 px-3 py-1 rounded-full">
                       ₱ {Number(room.roomtype_price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}/day
-                      <BedDoubleIcon size={20} />
+
                     </h2>
 
                     {/* Room Details in Badge Row */}
-                    <div className="flex gap-2">
-                      <Badge className="bg-transparent border-blue-500 text-blue-500">{room.roomtype_sizes}</Badge>
-                      <Badge className="bg-transparent border-blue-500 text-blue-500">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 px-3 py-1 rounded-full transition-colors shadow-sm">{room.roomtype_sizes}</Badge>
+                      <Badge className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 px-3 py-1 rounded-full transition-colors shadow-sm">
                         {room.roomtype_capacity}
-                        <User size={20} className="ml-1" />
+                        <User size={16} className="ml-1 text-blue-600" />
                       </Badge>
-                      <Badge className="bg-transparent border-blue-500 text-blue-500">
+                      <Badge className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 px-3 py-1 rounded-full transition-colors shadow-sm">
                         {room.roomtype_beds}
-                        <BedDoubleIcon size={20} className="ml-1" />
+                        <BedDoubleIcon size={16} className="ml-1 text-blue-600" />
                       </Badge>
                     </div>
                   </div>
 
-
-
-                  <div className="mt-auto">
+                  <div className="flex mt-auto pt-3 border-t border-blue-100 gap-2">
+                     <Moreinfo room={room} />
                     {room.status_id === 3 ? (
                       <BookingWaccount
                         rooms={rooms}
@@ -283,10 +291,12 @@ function CustomerDashboard() {
                         childrenNumber={childrenNumber}
                       />
                     ) : (
-                      <Button disabled className="w-full">Book Now</Button>
+                      <Button disabled className="w-full bg-gray-300 hover:bg-gray-300 text-gray-600 font-medium rounded-lg py-2 shadow-sm">Book Now</Button>
                     )}
                   </div>
                 </div>
+
+
 
 
               </Card>

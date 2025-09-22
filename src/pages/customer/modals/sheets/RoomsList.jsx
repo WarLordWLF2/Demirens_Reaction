@@ -5,7 +5,9 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import axios from 'axios'
 import React, { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 
 function RoomsList({ rooms, selectedRooms, setSelectedRooms }) {
  const [open, setOpen] = useState(false)
@@ -14,20 +16,58 @@ function RoomsList({ rooms, selectedRooms, setSelectedRooms }) {
 
  const handleBookedRoom = (room) => {
   setSelectedRooms([...selectedRooms, {
-   room_capacity: room.room_capacity,
+   roomtype_capacity: room.roomtype_capacity,
    room_type: room.roomtype_id,
    roomtype_price: room.roomtype_price,
    roomtype_description: room.roomtype_description,
    roomtype_name: room.roomtype_name
   }]);
+
+  console.log("selected roooom", room)
   setOpen(false);
  }
 
+ const getRooms = async () => {
+  try {
+   const url = localStorage.getItem('url') + "customer.php";
+   const adultNumber = localStorage.getItem("adult");
+   const childrenNumber = localStorage.getItem("children");
+   const checkIn = localStorage.getItem("checkIn");
+   const checkOut = localStorage.getItem("checkOut");
+   const jsonData = {
+    "checkIn": checkIn,
+    "checkOut": checkOut,
+    "guestNumber": 0
+   }
+   const formData = new FormData();
+   formData.append("operation", "getAvailableRoomsWithGuests");
+   formData.append("json", JSON.stringify(jsonData));
+   const response = await axios.post(url, formData);
+   const res = response.data;
+   console.log("res ni get rooms mo to", res);
+   if (res !== 0) {
+    const filteredRooms = res.filter((room) => room.status_id === 3);
+    setAvailableRooms(filteredRooms);
+   } else {
+    setAvailableRooms([]);
+   }
+
+   console.log("res ni getRooms", res);
+  } catch (error) {
+   toast.error("Something went wrong");
+   console.error("error", error);
+
+  }
+ }
+
  useEffect(() => {
-  const filteredRooms = rooms.filter((room) => room.status_id === 3);
-  setAvailableRooms(filteredRooms || []);
-  console.log("filtered rooms", filteredRooms);
- }, [rooms, selectedRooms, setSelectedRooms])
+  // const filteredRooms = rooms.filter((room) => room.status_id === 3);
+  // setAvailableRooms(filteredRooms || []);
+  // console.log("filtered rooms", filteredRooms);
+  if (open) {
+   getRooms();
+  }
+ }, [open])
 
 
  return (
@@ -43,23 +83,34 @@ function RoomsList({ rooms, selectedRooms, setSelectedRooms }) {
        <div>
         <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5">
          <div className="flex justify-center">
-          <Carousel className="w-full max-w-[280px]">
-           <CarouselContent>
-            {Array.from({ length: 5 }).map((_, index) => (
-             <CarouselItem key={index}>
-              <div className="p-1">
-               <Card>
-                <CardContent className="flex aspect-square items-center justify-center p-4">
-                 <span className="text-2xl font-semibold">{index + 1}</span>
-                </CardContent>
-               </Card>
-              </div>
-             </CarouselItem>
-            ))}
-           </CarouselContent>
-           <CarouselPrevious className="left-1" />
-           <CarouselNext className="right-1" />
-          </Carousel>
+          {rooms.images && rooms.images.length > 0 ? (
+           <Carousel className="w-full max-w-xs">
+            <CarouselContent>
+             {rooms.images.map((room, index) => (
+              <CarouselItem key={index}>
+               <div className="p-1">
+                <Card>
+                 <CardContent className="flex aspect-square items-center justify-center p-4">
+                  <div className="w-full h-80 overflow-hidden">
+                   <img src={localStorage.getItem('url') + "images/" + room.imagesroommaster_filename} alt={`Room ${index + 1}`} className="w-full h-full object-cover" />
+                  </div>
+                 </CardContent>
+                </Card>
+               </div>
+              </CarouselItem>
+             ))}
+            </CarouselContent>
+            <CarouselPrevious className="ml-4" />
+            <CarouselNext className="mr-4" />
+           </Carousel>
+          ) : (
+           <Card>
+            <CardContent className="flex aspect-square items-center justify-center p-4">
+             <p className="text-center">No image available</p>
+            </CardContent>
+           </Card>
+          )
+          }
          </div>
          <div>
           <h1 className="font-semibold text-2xl">{rooms.roomtype_name}</h1>
