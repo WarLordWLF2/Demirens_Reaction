@@ -16,12 +16,14 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { Eye, EyeOff } from "lucide-react";
 
 function Login() {
     const { useEffect, useState } = React;
     const [isCaptchaValid, setIsCaptchaValid] = useState(false);
     const [captchaCharacters, setCaptchaCharacters] = useState([]);
     const [userInput, setUserInput] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const navigateTo = useNavigate();
 
     const getRandomColor = () => {
@@ -184,12 +186,22 @@ function Login() {
                                             <FormLabel className="text-sm sm:text-base font-medium">Password</FormLabel>
                                         </div>
                                         <FormControl>
-                                            <Input
-                                                type="password"
-                                                placeholder="Enter Password"
-                                                className="h-9 sm:h-10 px-3 py-2 text-sm sm:text-base rounded-lg focus:ring-2 focus:ring-[#769FCD] transition-all"
-                                                {...field}
-                                            />
+                                            <div className="relative">
+                                                <Input
+                                                    type={showPassword ? "text" : "password"}
+                                                    placeholder="Enter Password"
+                                                    className="h-9 sm:h-10 px-3 py-2 pr-10 text-sm sm:text-base rounded-lg focus:ring-2 focus:ring-[#769FCD] transition-all"
+                                                    {...field}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                                    onClick={() => setShowPassword((prev) => !prev)}
+                                                    tabIndex={-1}
+                                                >
+                                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                </button>
+                                            </div>
                                         </FormControl>
                                         <div className="flex justify-end">
                                             <Button variant="link" asChild className="h-auto p-0 text-xs sm:text-sm text-[#769FCD]">

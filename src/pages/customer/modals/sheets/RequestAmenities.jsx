@@ -99,12 +99,12 @@ function RequestAmenities({ bookingId, bookingRoomId, getBookingSummary }) {
   // build payload for PHP
   const payload = {
    bookingId: parseInt(bookingId),
-   charges: Array.isArray(selectedAmenities) ? selectedAmenities.map(item => ({
+   charges: selectedAmenities.map(item => ({
     booking_room_id: parseInt(bookingRoomId),
     charges_master_id: item.id,
     charges_quantity: item.quantity,
     booking_charges_price: item.price * item.quantity
-   })) : []
+   }))
   };
 
   // ✅ This is the JSON your PHP expects
@@ -146,7 +146,7 @@ function RequestAmenities({ bookingId, bookingRoomId, getBookingSummary }) {
      <div className="mt-4 px-4">
       <form onSubmit={handleSubmit} className="space-y-4">
        <div className="flex flex-col space-y-3">
-        {Array.isArray(amenities) && amenities.map((item) => (
+        {amenities.map((item) => (
          <label key={item.charges_master_id} className="flex items-center space-x-3">
           <input
            type="checkbox"
@@ -185,7 +185,7 @@ function RequestAmenities({ bookingId, bookingRoomId, getBookingSummary }) {
      </DialogHeader>
 
      <div className="space-y-4">
-      {Array.isArray(selectedAmenities) && selectedAmenities.map((item, index) => (
+      {selectedAmenities.map((item, index) => (
        <div key={item.id} className="flex items-center justify-between">
         <div className="flex flex-col">
          <span>{item.name} ({item.price}₱ each)</span>
