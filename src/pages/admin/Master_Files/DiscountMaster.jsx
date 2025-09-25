@@ -1,6 +1,6 @@
 import React from 'react'
 import axios from 'axios'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import AdminModal from '@/pages/admin/components/AdminModal';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/popover"
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -46,19 +47,22 @@ function DiscountMaster() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const formSchema = z.object({
-    discountType: z.string().min(1, 'Required'),
-    startDate: z.string().min(1, 'Required'),
-    endDate: z.string().min(1, 'Required'),
-    discountPercent: z.string().min(1, 'Required'),
+    discountName: z.string().min(1, 'Required'),
+    discountPercentage: z.string().optional(),
+    discountAmount: z.string().optional(),
+    discountDescription: z.string().optional(),
+  }).refine((data) => data.discountPercentage || data.discountAmount, {
+    message: "Either percentage or amount is required",
+    path: ["discountPercentage"],
   });
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      discountType: '',
-      startDate: '',
-      endDate: '',
-      discountPercent: '',
+      discountName: '',
+      discountPercentage: '',
+      discountAmount: '',
+      discountDescription: '',
     },
   });
 
@@ -76,12 +80,12 @@ function DiscountMaster() {
   };
 
   const popUpdateModal = (discountData) => {
-    console.log("From Update MOdal:", discountData);
+    console.log("From Update Modal:", discountData);
     const formattedData = {
-      discountType: discountData.discounts_type,
-      startDate: discountData.discounts_datestart,
-      endDate: discountData.discounts_dateend,
-      discountPercent: discountData.discounts_percent
+      discountName: discountData.discounts_name,
+      discountPercentage: discountData.discounts_percentage?.toString() || '',
+      discountAmount: discountData.discounts_amount?.toString() || '',
+      discountDescription: discountData.discounts_description || ''
     }
     setSelectedDiscount({
       discount_id: discountData.discounts_id,
@@ -97,7 +101,7 @@ function DiscountMaster() {
   };
 
   // --------- API Connections --------- //
-  const getAllDiscounts = async () => {
+  const getAllDiscounts = useCallback(async () => {
     setIsLoading(true);
     const reqFormDiscounts = new FormData();
     reqFormDiscounts.append('method', 'view_discount');
@@ -106,29 +110,21 @@ function DiscountMaster() {
       const conn = await axios.post(APIConn, reqFormDiscounts);
       if (conn.data) {
         setAllDiscounts(conn.data !== 0 ? conn.data : []);
-
-        // Find a Way to only call this once and only call it when something is either added, updated or deleted do the 
-        // same thing for the other master files in order to avoid wasting API Calls
-        // console.log("FetchData", conn.data);
-
       } else {
         console.log('No data has been fetched...');
       }
     } catch (err) {
       toast('Failed Connection... ');
     } finally {
-      toast('Content is Done...');
       setIsLoading(false);
     }
-  };
+  }, [APIConn]);
 
   const addNewDiscounts = async (discountData) => {
     setIsLoading(true);
     const addDiscountForm = new FormData();
     addDiscountForm.append("method", "add_discount");
     addDiscountForm.append("json", JSON.stringify(discountData));
-
-    console.log("Send this data to API", addDiscountForm);
 
     try {
       const conn = await axios.post(APIConn, addDiscountForm);
@@ -139,25 +135,22 @@ function DiscountMaster() {
       toast("Failed to Add Discount...");
     } finally {
       resetStates();
-      toast("Content is Done");
     }
   }
 
   const updateDiscounts = async (discountValues) => {
-    setIsLoading(false);
+    setIsLoading(true);
     const jsonData = {
       discounts_id: selectedDiscount.discount_id,
-      discount_type: discountValues.discountType,
-      discount_startDate: discountValues.startDate,
-      discount_endDate: discountValues.endDate,
-      discount_percent: parseInt(discountValues.discountPercent)
+      discounts_name: discountValues.discountName,
+      discounts_percentage: discountValues.discountPercentage ? parseFloat(discountValues.discountPercentage) : null,
+      discounts_amount: discountValues.discountAmount ? parseInt(discountValues.discountAmount) : null,
+      discounts_description: discountValues.discountDescription
     }
 
     const updateDiscForm = new FormData();
     updateDiscForm.append("method", "update_discount");
     updateDiscForm.append("json", JSON.stringify(jsonData));
-
-    console.log("Get this only: ", updateDiscForm);
 
     try {
       const conn = await axios.post(APIConn, updateDiscForm);
@@ -171,7 +164,6 @@ function DiscountMaster() {
     } finally {
       resetStates();
       setIsLoading(false);
-      toast("Content Loaded");
     }
   }
 
@@ -197,7 +189,7 @@ function DiscountMaster() {
 
   // Filter discounts based on search term
   const filteredDiscounts = allDiscounts.filter(discount =>
-    discount.discounts_type.toLowerCase().includes(searchTerm.toLowerCase())
+    discount.discounts_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   useEffect(() => {
@@ -290,7 +282,7 @@ function DiscountMaster() {
                           <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Avg. Discount</p>
                           <p className="text-2xl font-bold text-green-600">
                             {allDiscounts.length > 0 
-                              ? Math.round(allDiscounts.reduce((sum, disc) => sum + disc.discounts_percent, 0) / allDiscounts.length)
+                              ? Math.round(allDiscounts.reduce((sum, disc) => sum + (disc.discounts_percentage || 0), 0) / allDiscounts.length)
                               : 0}%
                           </p>
                         </div>
@@ -323,19 +315,16 @@ function DiscountMaster() {
                       <TableHeader className="bg-gray-50 dark:bg-gray-800/50">
                         <TableRow>
                           <TableHead className="font-semibold">ID</TableHead>
-                          <TableHead className="font-semibold">Type</TableHead>
-                          <TableHead className="font-semibold">Start Date</TableHead>
-                          <TableHead className="font-semibold">End Date</TableHead>
-                          <TableHead className="font-semibold text-center">Discount %</TableHead>
-                          <TableHead className="font-semibold text-center">Status</TableHead>
+                          <TableHead className="font-semibold">Name</TableHead>
+                          <TableHead className="font-semibold">Description</TableHead>
+                          <TableHead className="font-semibold text-center">Percentage</TableHead>
+                          <TableHead className="font-semibold text-center">Amount</TableHead>
                           <TableHead className="font-semibold text-center">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredDiscounts.length > 0 ? (
                           filteredDiscounts.map((discount, index) => {
-                            const isActive = new Date() >= new Date(discount.discounts_datestart) && 
-                                           new Date() <= new Date(discount.discounts_dateend);
                             return (
                               <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <TableCell className="font-medium">
@@ -343,24 +332,27 @@ function DiscountMaster() {
                                     #{discount.discounts_id}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="font-medium">{discount.discounts_type}</TableCell>
-                                <TableCell>{formatDate(discount.discounts_datestart)}</TableCell>
-                                <TableCell>{formatDate(discount.discounts_dateend)}</TableCell>
-                                <TableCell className="text-center">
-                                  <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">
-                                    {discount.discounts_percent}%
-                                  </Badge>
+                                <TableCell className="font-medium">{discount.discounts_name}</TableCell>
+                                <TableCell className="max-w-[200px] truncate">
+                                  {discount.discounts_description || 'No description'}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                  <Badge 
-                                    variant={isActive ? "default" : "secondary"}
-                                    className={isActive 
-                                      ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300"
-                                      : "bg-gray-100 text-gray-700 dark:bg-gray-950 dark:text-gray-300"
-                                    }
-                                  >
-                                    {isActive ? 'Active' : 'Inactive'}
-                                  </Badge>
+                                  {discount.discounts_percentage ? (
+                                    <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">
+                                      {discount.discounts_percentage}%
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {discount.discounts_amount ? (
+                                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300">
+                                      ₱{discount.discounts_amount}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
                                 </TableCell>
                                 <TableCell className="text-center">
                                   <Popover>
@@ -397,7 +389,7 @@ function DiscountMaster() {
                           })
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                            <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                               {searchTerm ? 'No discounts found matching your search.' : 'No discounts available.'}
                             </TableCell>
                           </TableRow>
@@ -434,12 +426,12 @@ function DiscountMaster() {
                 >
                   <FormField
                     control={form.control}
-                    name="discountType"
+                    name="discountName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Discount Type</FormLabel>
+                        <FormLabel>Discount Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Type of discount" {...field} />
+                          <Input placeholder="e.g. Early Bird, Senior Citizen" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -448,12 +440,12 @@ function DiscountMaster() {
 
                   <FormField
                     control={form.control}
-                    name="startDate"
+                    name="discountPercentage"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Start Date</FormLabel>
+                        <FormLabel>Discount Percentage</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="number" step="0.01" placeholder="e.g. 15.50" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -462,12 +454,12 @@ function DiscountMaster() {
 
                   <FormField
                     control={form.control}
-                    name="endDate"
+                    name="discountAmount"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>End Date</FormLabel>
+                        <FormLabel>Discount Amount (Fixed)</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="number" placeholder="e.g. 500" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -476,12 +468,12 @@ function DiscountMaster() {
 
                   <FormField
                     control={form.control}
-                    name="discountPercent"
+                    name="discountDescription"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Discount Percent</FormLabel>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 15" {...field} />
+                          <Textarea placeholder="Optional description..." {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -501,14 +493,14 @@ function DiscountMaster() {
                   })}
                   className="space-y-4"
                 >
-                  {/* Discount Type */}
+                  {/* Discount Name */}
                   <FormField
                     control={form.control}
-                    name="discountType"
-                    defaultValue={selectedDiscount.discountType}
+                    name="discountName"
+                    defaultValue={selectedDiscount.discountName}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Discount Type</FormLabel>
+                        <FormLabel>Discount Name</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -516,46 +508,46 @@ function DiscountMaster() {
                     )}
                   />
 
-                  {/* Start Date */}
+                  {/* Discount Percentage */}
                   <FormField
                     control={form.control}
-                    name="startDate"
-                    defaultValue={selectedDiscount.startDate}
+                    name="discountPercentage"
+                    defaultValue={selectedDiscount.discountPercentage}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Start Date</FormLabel>
+                        <FormLabel>Discount Percentage</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="number" step="0.01" {...field} />
                         </FormControl>
                       </FormItem>
                     )}
                   />
 
-                  {/* End Date */}
+                  {/* Discount Amount */}
                   <FormField
                     control={form.control}
-                    name="endDate"
-                    defaultValue={selectedDiscount.endDate}
+                    name="discountAmount"
+                    defaultValue={selectedDiscount.discountAmount}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>End Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Discount Percent */}
-                  <FormField
-                    control={form.control}
-                    name="discountPercent"
-                    defaultValue={selectedDiscount.discountPercent}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Discount Percent</FormLabel>
+                        <FormLabel>Discount Amount (Fixed)</FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Description */}
+                  <FormField
+                    control={form.control}
+                    name="discountDescription"
+                    defaultValue={selectedDiscount.discountDescription}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
                         </FormControl>
                       </FormItem>
                     )}

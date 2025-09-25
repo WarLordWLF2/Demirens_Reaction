@@ -326,7 +326,7 @@ const ChooseRooms = () => {
                         imageArray.map((img, i) => (
                           <CarouselItem key={i}>
                             <img
-                              src={`http://localhost/demirenAPI/images/${img}`}
+                              src={`${localStorage.url}images/${img}`}
                               alt={room.roomtype_name}
                               className="w-full h-56 object-cover"
                             />

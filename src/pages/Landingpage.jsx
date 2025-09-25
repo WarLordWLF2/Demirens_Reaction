@@ -2,7 +2,7 @@ import LandingHeader from '@/components/layout/LandingHeader'
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card'
 import axios from 'axios';
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, } from "@/components/ui/form"
 import { useForm } from "react-hook-form"
@@ -53,7 +53,6 @@ function Landingpage() {
   const [rooms, setRooms] = useState([]);
   const [adultNumber, setAdultNumber] = useState(0);
   const [childrenNumber, setChildrenNumber] = useState(0);
-  const [isSearched, setIsSearched] = useState(false);
 
   const navigateTo = useNavigate();
 
@@ -116,14 +115,7 @@ function Landingpage() {
   }
 
 
-  const handleClearData = () => {
-    localStorage.removeItem("checkIn");
-    localStorage.removeItem("checkOut");
-    localStorage.removeItem("guestNumber");
-    localStorage.removeItem("children");
-    localStorage.removeItem("adult");
-    setIsSearched(false);
-  }
+
 
 
   const onSubmit = async (data) => {
@@ -134,7 +126,6 @@ function Landingpage() {
     localStorage.setItem("guestNumber", Number(adultNumber) + Number(childrenNumber));
     console.log("mga data sa pag search", data);
     getRooms(data);
-    setIsSearched(true);
     navigateTo("/customer/roomsearch");
   }
 
@@ -149,8 +140,8 @@ function Landingpage() {
   };
 
 
-  useEffect(() => {
 
+  useEffect(() => {
     getRooms();
   }, []);
 
@@ -197,7 +188,7 @@ function Landingpage() {
                     <Form {...form}>
 
                       <form onSubmit={form.handleSubmit(onSubmit)} >
-                        <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-2 xl:grid-cols-6 gap-4">
                           <FormField
                             control={form.control}
                             name="checkIn"
@@ -262,7 +253,7 @@ function Landingpage() {
                             </div>
                           </div>
                           <div className="flex items-end ">
-                            <Button className="w-full  ">Search</Button>
+                            <Button className="w-full" type="submit">Search</Button>
                           </div>
                         </div>
 
@@ -512,6 +503,7 @@ function Landingpage() {
         < footer >
           <Footer />
         </footer >
+        
       </div >
     </>
 

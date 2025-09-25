@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { BedDoubleIcon, MinusIcon, Plus, User, ChevronLeft, ChevronRight } from 'lucide-react'
+import { BedDoubleIcon, MinusIcon, Moon, Plus, Smile, User } from 'lucide-react'
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Form,
@@ -16,6 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import BookingWaccount from './modals/sheets/BookingWaccount'
 import DatePicker from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
+import { Link, useNavigate } from 'react-router-dom'
 import Moreinfo from './modals/sheets/Moreinfo';
 
 
@@ -55,7 +57,45 @@ function CustomerDashboard() {
   const [adultNumber, setAdultNumber] = useState(0);
   const [childrenNumber, setChildrenNumber] = useState(0);
   const [isSearched, setIsSearched] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState({});
+
+  // Utility at top of component
+  const getTomorrowAndNextDay = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const nextDay = new Date(tomorrow);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    // Convert to yyyy-mm-dd for DatePicker
+    const format = (d) => d.toISOString().split('T')[0];
+    return {
+      checkIn: format(tomorrow),
+      checkOut: format(nextDay),
+    };
+  };
+
+  React.useEffect(() => {
+    const { checkIn, checkOut } = getTomorrowAndNextDay();
+
+    // set form values
+    form.setValue("checkIn", checkIn);
+    form.setValue("checkOut", checkOut);
+
+    // set default adult
+    setAdultNumber(1);
+
+    // also set in localStorage for consistency if needed
+    localStorage.setItem("checkIn", checkIn);
+    localStorage.setItem("checkOut", checkOut);
+    localStorage.setItem("adult", 1);
+    localStorage.setItem("children", 0);
+    localStorage.setItem("guestNumber", 1);
+
+    // Immediately fetch rooms
+    getRooms({ checkIn, checkOut });
+    setIsSearched(true);
+  }, []); // runs once on mount
+
+
 
 
   const form = useForm({
@@ -80,7 +120,7 @@ function CustomerDashboard() {
       formData.append("json", JSON.stringify(jsonData));
       const res = await axios.post(url, formData);
       console.log("res ni getRooms", res);
-      setRooms(Array.isArray(res.data) ? res.data : []);
+      setRooms(res.data !== 0 ? res.data : []);
     } catch (error) {
       toast.error("Something went wrong");
       console.error(error);
@@ -97,28 +137,7 @@ function CustomerDashboard() {
     localStorage.removeItem("children");
     localStorage.removeItem("adult");
     setIsSearched(false);
-    setCurrentImageIndex({});
   }
-
-  const nextImage = (roomIndex) => {
-    const room = rooms[roomIndex];
-    if (room?.images?.length > 1) {
-      setCurrentImageIndex(prev => ({
-        ...prev,
-        [roomIndex]: ((prev[roomIndex] || 0) + 1) % room.images.length
-      }));
-    }
-  };
-
-  const prevImage = (roomIndex) => {
-    const room = rooms[roomIndex];
-    if (room?.images?.length > 1) {
-      setCurrentImageIndex(prev => ({
-        ...prev,
-        [roomIndex]: ((prev[roomIndex] || 0) - 1 + room.images.length) % room.images.length
-      }));
-    }
-  };
 
   const onSubmit = async (data) => {
     // Ensure at least 1 adult is always set
@@ -251,51 +270,12 @@ function CustomerDashboard() {
               <Card key={index} className="flex flex-col h-full rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-100 bg-gradient-to-b from-white to-sky-50 overflow-hidden transform hover:-translate-y-1">
 
                 {/* Image Section */}
-                <div className="w-full h-56 overflow-hidden relative group">
-                  {room.images && room.images.length > 0 ? (
-                    <>
-                      <img
-                        src={localStorage.getItem("url") + "images/" + room.images[currentImageIndex[index] || 0]?.imagesroommaster_filename}
-                        alt="Room"
-                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                        onError={(e) => {
-                          e.target.src = 'https://via.placeholder.com/400x320?text=Image+Not+Found';
-                        }}
-                      />
-                      {/* Navigation arrows - only show if multiple images */}
-                      {room.images.length > 1 && (
-                        <>
-                          <button
-                            onClick={() => prevImage(index)}
-                            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/70"
-                          >
-                            <ChevronLeft size={20} />
-                          </button>
-                          <button
-                            onClick={() => nextImage(index)}
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/70"
-                          >
-                            <ChevronRight size={20} />
-                          </button>
-                        </>
-                      )}
-                      {/* Image counter */}
-                      {room.images.length > 1 && (
-                        <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                          {(currentImageIndex[index] || 0) + 1} / {room.images.length}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <img
-                      src={localStorage.getItem("url") + "images/" + room.roomtype_image}
-                      alt="Room"
-                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/400x320?text=No+Image+Available';
-                      }}
-                    />
-                  )}
+                <div className="w-full h-56 overflow-hidden relative">
+                  <img
+                    src={localStorage.getItem("url") + "images/" + room.roomtype_image}
+                    alt="Room"
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                  />
                   <div className="absolute top-0 right-0 m-2">
                     <Badge className="bg-blue-600 text-white font-medium px-3 py-1">
                       Available
@@ -340,7 +320,7 @@ function CustomerDashboard() {
                   </div>
 
                   <div className="flex mt-auto pt-3 border-t border-blue-100 gap-2">
-                     <Moreinfo room={room} />
+                    <Moreinfo room={room} />
                     {room.status_id === 3 ? (
                       <BookingWaccount
                         rooms={rooms}

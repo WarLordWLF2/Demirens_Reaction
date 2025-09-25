@@ -21,6 +21,7 @@ import BookingNoAccount from './modals/sheets/BookingNoAccount';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@radix-ui/react-scroll-area';
 import { ScrollBar } from '@/components/ui/scroll-area';
+import CustomerHeader from '@/components/layout/CustomerHeader';
 
 const schema = z.object({
   checkIn: z.string().min(1, { message: "Check in is required" }),
@@ -154,26 +155,35 @@ function RoomSearch() {
 
 
   return (
-    <div className="flex flex-col gap-6 w-full px-2 md:px-8 py-6">
+    <div className="min-h-screen bg-gray-50">
+      <CustomerHeader />
+      
+      {/* Header Section */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Room Search</h1>
+              <p className="text-gray-600 mt-1">Find and book your perfect room</p>
+            </div>
+            <Button variant="outline" onClick={handleClearData}>
+              Clear Search
+            </Button>
+          </div>
+        </div>
+      </div>
 
-
-      <section className="bg-gray-100 p-6 rounded-lg shadow min-h-[15vh] w-full ">
-
-        <div className="flex items-center justify-center min-h-[10vh] w-full ">
-          <Card className=" w-full max-w-6xl">
-            <CardContent>
-              <Form {...form}>
-
-                <form onSubmit={form.handleSubmit(onSubmit)} >
-                  <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
-                    {/* 
-            To prefill the form with values passed from another page (e.g., via localStorage or navigation state), 
-            you should initialize your form's default values using those sources.
-            This rewrite will:
-            - Prefill checkIn, checkOut, adultNumber, and childrenNumber from localStorage if available.
-            - Show the values in the form fields.
-            - If the user navigated here from another page and those values were set, they will appear.
-          */}
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Left Panel - Search Form */}
+          <div className="lg:col-span-1">
+            <Card className="sticky top-6">
+              <CardContent className="p-6">
+                <h2 className="text-lg font-semibold mb-4">Search Criteria</h2>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField
                       control={form.control}
                       name="checkIn"
@@ -182,17 +192,17 @@ function RoomSearch() {
                           <DatePicker
                             form={form}
                             name={field.name}
-                            label="Check-in"
+                            label="Check-in Date"
                             pastAllowed={false}
                             futureAllowed={true}
                             withTime={false}
-                            // Prefill value from localStorage if available
                             value={field.value || localStorage.getItem("checkIn") || ""}
                             onChange={field.onChange}
                           />
                         </FormItem>
                       )}
                     />
+                    
                     <FormField
                       control={form.control}
                       name="checkOut"
@@ -201,7 +211,7 @@ function RoomSearch() {
                           <DatePicker
                             form={form}
                             name={field.name}
-                            label="Check-out"
+                            label="Check-out Date"
                             pastAllowed={false}
                             futureAllowed={true}
                             withTime={false}
@@ -212,19 +222,20 @@ function RoomSearch() {
                       )}
                     />
 
-                    <div>
-                      <Label className={"mb-2 "}>Adults</Label>
-                      <div className="flex items-center justify-start space-x-2">
+                    <div className="space-y-2">
+                      <Label>Adults</Label>
+                      <div className="flex items-center space-x-2">
                         <Button
                           type="button"
                           variant="outline"
+                          size="sm"
                           onClick={() => setAdultNumber(adultNumber - 1)}
                           disabled={adultNumber <= 1}
                         >
-                          <MinusIcon />
+                          <MinusIcon className="h-4 w-4" />
                         </Button>
                         <Input
-                          className="w-1/4"
+                          className="text-center"
                           type="number"
                           readOnly
                           value={adultNumber}
@@ -232,26 +243,28 @@ function RoomSearch() {
                         <Button
                           type="button"
                           variant="outline"
+                          size="sm"
                           onClick={() => setAdultNumber(adultNumber + 1)}
                         >
-                          <Plus />
+                          <Plus className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
 
-                    <div>
-                      <Label className={"mb-2 "}>Children</Label>
-                      <div className="flex items-center justify-start space-x-2">
+                    <div className="space-y-2">
+                      <Label>Children</Label>
+                      <div className="flex items-center space-x-2">
                         <Button
                           type="button"
                           variant="outline"
+                          size="sm"
                           onClick={() => setChildrenNumber(childrenNumber - 1)}
                           disabled={childrenNumber === 0}
                         >
-                          <MinusIcon />
+                          <MinusIcon className="h-4 w-4" />
                         </Button>
                         <Input
-                          className="w-1/4"
+                          className="text-center"
                           type="number"
                           readOnly
                           value={childrenNumber}
@@ -259,130 +272,153 @@ function RoomSearch() {
                         <Button
                           type="button"
                           variant="outline"
+                          size="sm"
                           onClick={() => setChildrenNumber(childrenNumber + 1)}
                         >
-                          <Plus />
+                          <Plus className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                    <div className="flex items-end ">
-                      <Button className="w-full  " type="submit">Search</Button>
-                    </div>
-                  </div>
-                  {/* 
-          If you want to clear the prefilled values when the user clicks a "Clear" button, 
-          call handleClearData() which removes the localStorage items and resets the state.
-        */}
-                </form>
-              </Form>
-            </CardContent>
 
-          </Card>
-        </div>
+                    <Button type="submit" className="w-full">
+                      Search Rooms
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
 
+          {/* Right Panel - Room Results */}
+          <div className="lg:col-span-2">
+            <div className="space-y-4">
+              {/* Results Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">Available Rooms</h2>
+                  <p className="text-gray-600">
+                    {rooms.length > 0 
+                      ? `${rooms.length} room${rooms.length !== 1 ? 's' : ''} found`
+                      : 'No rooms available'
+                    }
+                  </p>
+                </div>
+                <div className="text-sm text-gray-500">
+                  {form.getValues('checkIn') && form.getValues('checkOut') && (
+                    <>
+                      {new Date(form.getValues('checkIn')).toLocaleDateString()} - {new Date(form.getValues('checkOut')).toLocaleDateString()}
+                    </>
+                  )}
+                </div>
+              </div>
 
-
-
-      </section>
-
-
-      <section className=" min-h-[50vh] w-full">
-        <ScrollArea className="rounded-md border p-4 ">
-
-
-          {!isSearched ? (
-            <p className="text-center text-lg font-semibold  mt-10">
-              Please check in and check out first.
-            </p>
-          ) : rooms.length === 0 ? (
-            <p className="text-center text-lg font-semibold text-gray-600 mt-10">
-              No rooms available for {Number(adultNumber < 1 ? 1 : adultNumber) + Number(childrenNumber)} guest(s).
-            </p>
-          ) : (
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 w-full">
-              {rooms.map((room, index) => (
-
-
-                <Card key={index} className="flex flex-col h-full rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300 border  bg-sky-100">
-
-                  {/* Image Section */}
-                  <div className="h-[30vh] w-full overflow-hidden ">
-                    <img
-                      src={localStorage.getItem("url") + "images/" + room.roomtype_image} alt="Room" className="w-full h-full object-cover" />
-
-                  </div>
-
-                  {/* Info Section */}
-                  <div className="flex flex-col p-4 flex-1">
-                    <h5 className="text-4xl font-semibold mb-2  text-blue-500">{room.roomtype_name}</h5>
-                    {/* <Button
-                    variant="link"
-                    className="w-full justify-start"
-
-                  >
-                    View Room →
-                  </Button> */}
-                    <p
-                      className="text-sm text-gray-600 mb-4 overflow-hidden"
-                      style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3, // bilang sa lines na ipakita
-                        WebkitBoxOrient: 'vertical',
-                      }}
-                    >
-                      {room.roomtype_description}
-                    </p>
-                    <div className="flex items-center justify-between mb-4">
-                      {/* Price + Moon icon */}
-                      <h2 className="text-xl font-bold text-blue-600 flex items-center gap-1">
-                        ₱ {Number(room.roomtype_price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}/day
-
-                      </h2>
-
-                      {/* Room Details in Badge Row */}
-                      <div className="flex gap-2">
-                        <Badge className="bg-transparent border-blue-500 text-blue-500">{room.roomtype_sizes}</Badge>
-                        <Badge className="bg-transparent border-blue-500 text-blue-500">
-                          {room.roomtype_capacity}
-                          <User size={20} className="ml-1" />
-                        </Badge>
-                        <Badge className="bg-transparent border-blue-500 text-blue-500">
-                          {room.roomtype_beds}
-                          <BedDoubleIcon size={20} className="ml-1" />
-                        </Badge>
+              {/* Room Results */}
+              <ScrollArea className="h-[70vh] rounded-md border p-4">
+                {!isSearched ? (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                      <div className="text-gray-400 mb-4">
+                        <BedDoubleIcon className="h-16 w-16 mx-auto" />
                       </div>
-                    </div>
-                    <div className="flex mt-auto gap-2">
-
-                      {room.status_id === 3 ? (
-                        <BookingNoAccount
-                          rooms={rooms}
-                          selectedRoom={room}
-                          handleClearData={handleClearData}
-                          adultNumber={adultNumber}
-                          childrenNumber={childrenNumber}
-                        />
-                      ) : (
-                        <Button disabled className="w-full">Book Now</Button>
-                      )}
-                      <Button >View Details</Button>
+                      <p className="text-lg font-semibold text-gray-500">
+                        Please select your dates and guest count
+                      </p>
+                      <p className="text-gray-400 mt-2">
+                        Use the search form to find available rooms
+                      </p>
                     </div>
                   </div>
-
-
-                </Card>
-              ))}
+                ) : rooms.length === 0 ? (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                      <div className="text-gray-400 mb-4">
+                        <BedDoubleIcon className="h-16 w-16 mx-auto" />
+                      </div>
+                      <p className="text-lg font-semibold text-gray-500">
+                        No rooms available
+                      </p>
+                      <p className="text-gray-400 mt-2">
+                        No rooms found for {Number(adultNumber < 1 ? 1 : adultNumber) + Number(childrenNumber)} guest(s) on these dates
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-6">
+                    {rooms.map((room, index) => (
+                      <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                        <div className="flex flex-col md:flex-row">
+                          {/* Room Image */}
+                          <div className="md:w-1/3 h-48 md:h-auto">
+                            <img
+                              src={localStorage.getItem("url") + "images/" + room.roomtype_image}
+                              alt={room.roomtype_name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          
+                          {/* Room Details */}
+                          <div className="md:w-2/3 p-6 flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-start justify-between mb-3">
+                                <h3 className="text-2xl font-bold text-gray-900">{room.roomtype_name}</h3>
+                                <div className="text-right">
+                                  <div className="text-2xl font-bold text-blue-600">
+                                    ₱{Number(room.roomtype_price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                  </div>
+                                  <div className="text-sm text-gray-500">per night</div>
+                                </div>
+                              </div>
+                              
+                              <p className="text-gray-600 mb-4 line-clamp-3">
+                                {room.roomtype_description}
+                              </p>
+                              
+                              <div className="flex flex-wrap gap-2 mb-4">
+                                <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                  {room.roomtype_sizes}
+                                </Badge>
+                                <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                  <User className="h-3 w-3 mr-1" />
+                                  {room.roomtype_capacity}
+                                </Badge>
+                                <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                  <BedDoubleIcon className="h-3 w-3 mr-1" />
+                                  {room.roomtype_beds}
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              {room.status_id === 3 ? (
+                                <BookingNoAccount
+                                  rooms={rooms}
+                                  selectedRoom={room}
+                                  handleClearData={handleClearData}
+                                  adultNumber={adultNumber}
+                                  childrenNumber={childrenNumber}
+                                />
+                              ) : (
+                                <Button disabled className="flex-1">
+                                  Not Available
+                                </Button>
+                              )}
+                              <Button variant="outline" className="flex-1">
+                                View Details
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+                <ScrollBar />
+              </ScrollArea>
             </div>
-          )}
-
-
-          <ScrollBar />
-        </ScrollArea >
-      </section>
-
+          </div>
+        </div>
+      </div>
     </div>
-
   )
 }
 

@@ -1,6 +1,6 @@
 import React from 'react'
 import axios from 'axios'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import AdminModal from '@/pages/admin/components/AdminModal';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -19,13 +19,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import AdminHeader from '../components/AdminHeader'
-import { Search, Filter, MoreHorizontal, Edit, Trash2, DollarSign, CreditCard, TrendingUp } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, Edit, Trash2, DollarSign, CreditCard, TrendingUp, Package } from 'lucide-react';
 
 import {
   Form,
@@ -40,25 +48,26 @@ function ChargeMaster() {
   const APIConn = `${localStorage.url}admin.php`;
 
   const [isLoading, setIsLoading] = useState(false);
-  const [allDiscounts, setAllDiscounts] = useState([]);
-  const [selectedDiscount, setSelectedDiscount] = useState(null);
+  const [allCharges, setAllCharges] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
+  const [selectedCharge, setSelectedCharge] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const formSchema = z.object({
-    discountType: z.string().min(1, 'Required'),
-    startDate: z.string().min(1, 'Required'),
-    endDate: z.string().min(1, 'Required'),
-    discountPercent: z.string().min(1, 'Required'),
+    chargeName: z.string().min(1, 'Required'),
+    chargeCategory: z.string().min(1, 'Required'),
+    chargePrice: z.string().min(1, 'Required'),
+    chargeDescription: z.string().optional(),
   });
 
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      discountType: '',
-      startDate: '',
-      endDate: '',
-      discountPercent: '',
+      chargeName: '',
+      chargeCategory: '',
+      chargePrice: '',
+      chargeDescription: '',
     },
   });
 
@@ -75,16 +84,16 @@ function ChargeMaster() {
     });
   };
 
-  const popUpdateModal = (discountData) => {
-    console.log("From Update MOdal:", discountData);
+  const popUpdateModal = (chargeData) => {
+    console.log("From Update Modal:", chargeData);
     const formattedData = {
-      discountType: discountData.discounts_type,
-      startDate: discountData.discounts_datestart,
-      endDate: discountData.discounts_dateend,
-      discountPercent: discountData.discounts_percent
+      chargeName: chargeData.charges_master_name,
+      chargeCategory: chargeData.charges_category_id?.toString(),
+      chargePrice: chargeData.charges_master_price?.toString(),
+      chargeDescription: chargeData.charges_master_description || ''
     }
-    setSelectedDiscount({
-      discount_id: discountData.discounts_id,
+    setSelectedCharge({
+      charge_id: chargeData.charges_master_id,
       ...formattedData
     });
 
@@ -97,70 +106,73 @@ function ChargeMaster() {
   };
 
   // --------- API Connections --------- //
-  const getAllDiscounts = async () => {
+  const getAllCharges = useCallback(async () => {
     setIsLoading(true);
-    const reqFormDiscounts = new FormData();
-    reqFormDiscounts.append('method', 'view_discount');
+    const reqFormCharges = new FormData();
+    reqFormCharges.append('method', 'view_charges');
 
     try {
-      const conn = await axios.post(APIConn, reqFormDiscounts);
+      const conn = await axios.post(APIConn, reqFormCharges);
       if (conn.data) {
-        setAllDiscounts(conn.data !== 0 ? conn.data : []);
-
-        // Find a Way to only call this once and only call it when something is either added, updated or deleted do the 
-        // same thing for the other master files in order to avoid wasting API Calls
-        // console.log("FetchData", conn.data);
-
+        setAllCharges(conn.data !== 0 ? conn.data : []);
       } else {
-        console.log('No data has been fetched...');
+        console.log('No charges data has been fetched...');
       }
     } catch (err) {
       toast('Failed Connection... ');
     } finally {
-      toast('Content is Done...');
       setIsLoading(false);
     }
-  };
+  }, [APIConn]);
 
-  const addNewDiscounts = async (discountData) => {
-    setIsLoading(true);
-    const addDiscountForm = new FormData();
-    addDiscountForm.append("method", "add_discount");
-    addDiscountForm.append("json", JSON.stringify(discountData));
-
-    console.log("Send this data to API", addDiscountForm);
+  const getAllCategories = useCallback(async () => {
+    const reqFormCategories = new FormData();
+    reqFormCategories.append('method', 'view_charges_category');
 
     try {
-      const conn = await axios.post(APIConn, addDiscountForm);
-      if (conn.data === 1) {
-        toast("Added New Discount!");
+      const conn = await axios.post(APIConn, reqFormCategories);
+      if (conn.data) {
+        setAllCategories(conn.data !== 0 ? conn.data : []);
       }
     } catch (err) {
-      toast("Failed to Add Discount...");
+      console.log('Failed to fetch categories...');
+    }
+  }, [APIConn]);
+
+  const addNewCharge = async (chargeData) => {
+    setIsLoading(true);
+    const addChargeForm = new FormData();
+    addChargeForm.append("method", "add_charge");
+    addChargeForm.append("json", JSON.stringify(chargeData));
+
+    try {
+      const conn = await axios.post(APIConn, addChargeForm);
+      if (conn.data === 1) {
+        toast("Added New Charge!");
+      }
+    } catch (err) {
+      toast("Failed to Add Charge...");
     } finally {
       resetStates();
-      toast("Content is Done");
     }
   }
 
-  const updateDiscounts = async (discountValues) => {
-    setIsLoading(false);
+  const updateCharge = async (chargeValues) => {
+    setIsLoading(true);
     const jsonData = {
-      discounts_id: selectedDiscount.discount_id,
-      discount_type: discountValues.discountType,
-      discount_startDate: discountValues.startDate,
-      discount_endDate: discountValues.endDate,
-      discount_percent: parseInt(discountValues.discountPercent)
+      charges_master_id: selectedCharge.charge_id,
+      charges_master_name: chargeValues.chargeName,
+      charges_category_id: parseInt(chargeValues.chargeCategory),
+      charges_master_price: parseInt(chargeValues.chargePrice),
+      charges_master_description: chargeValues.chargeDescription
     }
 
-    const updateDiscForm = new FormData();
-    updateDiscForm.append("method", "update_discount");
-    updateDiscForm.append("json", JSON.stringify(jsonData));
-
-    console.log("Get this only: ", updateDiscForm);
+    const updateChargeForm = new FormData();
+    updateChargeForm.append("method", "update_charge");
+    updateChargeForm.append("json", JSON.stringify(jsonData));
 
     try {
-      const conn = await axios.post(APIConn, updateDiscForm);
+      const conn = await axios.post(APIConn, updateChargeForm);
       if (conn.data === 1) {
         toast("Successfully Updated!");
       } else {
@@ -171,7 +183,6 @@ function ChargeMaster() {
     } finally {
       resetStates();
       setIsLoading(false);
-      toast("Content Loaded");
     }
   }
 
@@ -195,16 +206,18 @@ function ChargeMaster() {
     setIsLoading(false);
   }
 
-  // Filter discounts based on search term
-  const filteredDiscounts = allDiscounts.filter(discount =>
-    discount.discounts_type.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter charges based on search term
+  const filteredCharges = allCharges.filter(charge =>
+    charge.charges_master_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    charge.charges_category_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   useEffect(() => {
     if (!modalSettings.showModal) {
-      getAllDiscounts();
+      getAllCharges();
+      getAllCategories();
     }
-  }, [modalSettings.showModal]);
+  }, [modalSettings.showModal, getAllCharges, getAllCategories]);
 
   return (
     <>
@@ -260,7 +273,7 @@ function ChargeMaster() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Charges</p>
-                          <p className="text-2xl font-bold text-emerald-600">{allDiscounts.length}</p>
+                          <p className="text-2xl font-bold text-emerald-600">{allCharges.length}</p>
                         </div>
                         <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
                           <DollarSign className="w-5 h-5 text-emerald-600" />
@@ -273,11 +286,11 @@ function ChargeMaster() {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Active Charges</p>
-                          <p className="text-2xl font-bold text-blue-600">{filteredDiscounts.length}</p>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Categories</p>
+                          <p className="text-2xl font-bold text-blue-600">{allCategories.length}</p>
                         </div>
                         <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                          <CreditCard className="w-5 h-5 text-blue-600" />
+                          <Package className="w-5 h-5 text-blue-600" />
                         </div>
                       </div>
                     </CardContent>
@@ -287,10 +300,10 @@ function ChargeMaster() {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Avg. Amount</p>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Avg. Price</p>
                           <p className="text-2xl font-bold text-purple-600">
-                            ${allDiscounts.length > 0 
-                              ? Math.round(allDiscounts.reduce((sum, charge) => sum + charge.discounts_percent, 0) / allDiscounts.length)
+                            ₱{allCharges.length > 0 
+                              ? Math.round(allCharges.reduce((sum, charge) => sum + charge.charges_master_price, 0) / allCharges.length)
                               : 0}
                           </p>
                         </div>
@@ -306,7 +319,7 @@ function ChargeMaster() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Filtered Results</p>
-                          <p className="text-2xl font-bold text-orange-600">{filteredDiscounts.length}</p>
+                          <p className="text-2xl font-bold text-orange-600">{filteredCharges.length}</p>
                         </div>
                         <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-full">
                           <Search className="w-5 h-5 text-orange-600" />
@@ -323,32 +336,37 @@ function ChargeMaster() {
                       <TableHeader className="bg-gray-50 dark:bg-gray-800/50">
                         <TableRow>
                           <TableHead className="font-semibold">ID</TableHead>
-                          <TableHead className="font-semibold">Type</TableHead>
-                          <TableHead className="font-semibold">Start Date</TableHead>
-                          <TableHead className="font-semibold">End Date</TableHead>
-                          <TableHead className="font-semibold text-center">Amount</TableHead>
+                          <TableHead className="font-semibold">Name</TableHead>
+                          <TableHead className="font-semibold">Category</TableHead>
+                          <TableHead className="font-semibold">Description</TableHead>
+                          <TableHead className="font-semibold text-center">Price</TableHead>
                           <TableHead className="font-semibold text-center">Status</TableHead>
                           <TableHead className="font-semibold text-center">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredDiscounts.length > 0 ? (
-                          filteredDiscounts.map((charge, index) => {
-                            const isActive = new Date() >= new Date(charge.discounts_datestart) && 
-                                           new Date() <= new Date(charge.discounts_dateend);
+                        {filteredCharges.length > 0 ? (
+                          filteredCharges.map((charge, index) => {
+                            const isActive = charge.charges_master_status_id === 1;
                             return (
                               <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <TableCell className="font-medium">
                                   <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                                    #{charge.discounts_id}
+                                    #{charge.charges_master_id}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="font-medium">{charge.discounts_type}</TableCell>
-                                <TableCell>{formatDate(charge.discounts_datestart)}</TableCell>
-                                <TableCell>{formatDate(charge.discounts_dateend)}</TableCell>
+                                <TableCell className="font-medium">{charge.charges_master_name}</TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                    {charge.charges_category_name || 'N/A'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="max-w-[200px] truncate">
+                                  {charge.charges_master_description || 'No description'}
+                                </TableCell>
                                 <TableCell className="text-center">
                                   <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                                    ${charge.discounts_percent}
+                                    ₱{charge.charges_master_price}
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-center">
@@ -420,26 +438,26 @@ function ChargeMaster() {
             }
             modalTitle={
               modalSettings.modalMode === 'add'
-                ? 'Add new Discount'
+                ? 'Add new Charge'
                 : modalSettings.modalMode === 'update'
-                  ? 'Update Existing Discount'
-                  : 'Remove Discount'
+                  ? 'Update Existing Charge'
+                  : 'Remove Charge'
             }
           >
             {modalSettings.modalMode === 'add' && (
               <Form {...form}>
                 <form
-                  onSubmit={form.handleSubmit((values) => addNewDiscounts(values))}
+                  onSubmit={form.handleSubmit((values) => addNewCharge(values))}
                   className="space-y-4"
                 >
                   <FormField
                     control={form.control}
-                    name="discountType"
+                    name="chargeName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Discount Type</FormLabel>
+                        <FormLabel>Charge Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Type of discount" {...field} />
+                          <Input placeholder="e.g. Room Service, Laundry" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -448,12 +466,37 @@ function ChargeMaster() {
 
                   <FormField
                     control={form.control}
-                    name="startDate"
+                    name="chargeCategory"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Start Date</FormLabel>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {allCategories.map((category) => (
+                              <SelectItem key={category.charges_category_id} value={category.charges_category_id.toString()}>
+                                {category.charges_category_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="chargePrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="number" placeholder="e.g. 100" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -462,26 +505,12 @@ function ChargeMaster() {
 
                   <FormField
                     control={form.control}
-                    name="endDate"
+                    name="chargeDescription"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>End Date</FormLabel>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="discountPercent"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Discount Percent</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="e.g. 15" {...field} />
+                          <Textarea placeholder="Optional description..." {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -493,22 +522,22 @@ function ChargeMaster() {
               </Form>
             )}
 
-            {modalSettings.modalMode === 'update' && selectedDiscount && (
+            {modalSettings.modalMode === 'update' && selectedCharge && (
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit((values) => {
-                    updateDiscounts(values);
+                    updateCharge(values);
                   })}
                   className="space-y-4"
                 >
-                  {/* Discount Type */}
+                  {/* Charge Name */}
                   <FormField
                     control={form.control}
-                    name="discountType"
-                    defaultValue={selectedDiscount.discountType}
+                    name="chargeName"
+                    defaultValue={selectedCharge.chargeName}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Discount Type</FormLabel>
+                        <FormLabel>Charge Name</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -516,46 +545,57 @@ function ChargeMaster() {
                     )}
                   />
 
-                  {/* Start Date */}
+                  {/* Category */}
                   <FormField
                     control={form.control}
-                    name="startDate"
-                    defaultValue={selectedDiscount.startDate}
+                    name="chargeCategory"
+                    defaultValue={selectedCharge.chargeCategory}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Start Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {allCategories.map((category) => (
+                              <SelectItem key={category.charges_category_id} value={category.charges_category_id.toString()}>
+                                {category.charges_category_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </FormItem>
                     )}
                   />
 
-                  {/* End Date */}
+                  {/* Price */}
                   <FormField
                     control={form.control}
-                    name="endDate"
-                    defaultValue={selectedDiscount.endDate}
+                    name="chargePrice"
+                    defaultValue={selectedCharge.chargePrice}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>End Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Discount Percent */}
-                  <FormField
-                    control={form.control}
-                    name="discountPercent"
-                    defaultValue={selectedDiscount.discountPercent}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Discount Percent</FormLabel>
+                        <FormLabel>Price</FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Description */}
+                  <FormField
+                    control={form.control}
+                    name="chargeDescription"
+                    defaultValue={selectedCharge.chargeDescription}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
                         </FormControl>
                       </FormItem>
                     )}

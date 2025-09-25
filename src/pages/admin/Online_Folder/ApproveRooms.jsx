@@ -215,7 +215,7 @@ export default function ApproveRooms() {
               value={checkIn}
               onChange={(e) => handleCheckInChange(e.target.value)}
               min={tomorrow}
-              className="w-full border rounded-lg px-3 py-2 bg-background text-foreground"
+              className="w-full border border-border rounded-lg px-3 py-2 bg-background text-foreground"
             />
           </div>
           <div>
@@ -225,21 +225,21 @@ export default function ApproveRooms() {
               value={checkOut}
               onChange={(e) => handleCheckOutChange(e.target.value)}
               min={checkIn ? fmt(addDays(parseDate(checkIn), 1)) : fmt(new Date())}
-              className="w-full border rounded-lg px-3 py-2 bg-background text-foreground"
+              className="w-full border border-border rounded-lg px-3 py-2 bg-background text-foreground"
             />
           </div>
         </div>
 
         {/* Requested Summary */}
         <div className="mb-6 flex flex-wrap gap-2">
-          <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm">
+          <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground">
             Requested Rooms: <span className="font-semibold">{maxSelect}</span>
           </div>
-          <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm">
+          <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground">
             Remaining to select:{" "}
             <span className="font-semibold">{remaining}</span>
           </div>
-          <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm">
+          <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground">
             Types:{" "}
             {(state.requestedRoomTypes || []).map((t) => t.name).join(", ") || "-"}
           </div>
@@ -247,7 +247,7 @@ export default function ApproveRooms() {
 
         {/* Search */}
         <div className="relative mb-6">
-          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
           <Input
             placeholder="Search rooms..."
             value={search}
@@ -259,7 +259,7 @@ export default function ApproveRooms() {
         {loading ? (
           <p className="text-center text-muted-foreground">Loading rooms…</p>
         ) : finalList.length === 0 ? (
-          <p className="text-center text-red-500 font-semibold">No Available Rooms</p>
+          <p className="text-center text-red-500 dark:text-red-400 font-semibold">No Available Rooms</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {finalList.map((room, i) => {
@@ -280,7 +280,7 @@ export default function ApproveRooms() {
                         imgs.map((img, idx) => (
                           <CarouselItem key={idx}>
                             <img
-                              src={`http://localhost/demirenAPI/images/${img}`}
+                              src={`${localStorage.url}images/${img}`}
                               alt={room.roomtype_name}
                               className="w-full h-56 object-cover"
                             />
@@ -303,7 +303,7 @@ export default function ApproveRooms() {
                       <h2 className="text-lg font-semibold text-foreground">
                         {room.roomtype_name} — Room #{room.roomnumber_id} (Floor {room.roomfloor})
                       </h2>
-                      <span className="font-bold text-green-600">
+                      <span className="font-bold text-green-600 dark:text-green-400">
                         {currency(room.roomtype_price)}
                       </span>
                     </div>
@@ -318,9 +318,9 @@ export default function ApproveRooms() {
                     {checkIn && checkOut && (
                       <div className="mt-2">
                         {available ? (
-                          <span className="inline-block text-xs px-2 py-1 rounded bg-green-100 text-green-700">Available</span>
+                          <span className="inline-block text-xs px-2 py-1 rounded bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">Available</span>
                         ) : (
-                          <span className="inline-block text-xs px-2 py-1 rounded bg-red-100 text-red-700">Conflict on selected dates</span>
+                          <span className="inline-block text-xs px-2 py-1 rounded bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300">Conflict on selected dates</span>
                         )}
                       </div>
                     )}
@@ -342,13 +342,13 @@ export default function ApproveRooms() {
         <div className="mt-6 flex items-center justify-end gap-2">
           <button
             onClick={() => navigate("/admin/online")}
-            className="px-4 py-2 rounded border border-border bg-card hover:bg-muted"
+            className="px-4 py-2 rounded border border-border bg-card hover:bg-muted text-foreground transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={proceed}
-            className="px-6 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            className="px-6 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             disabled={selected.length !== maxSelect}
           >
             Confirm Selection

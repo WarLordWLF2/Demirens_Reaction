@@ -284,11 +284,17 @@ const Register = () => {
 
       const res = await axios.post(url, otpForm);
 
-      if (res.data?.success) {
+      console.log("OTP Response:", res.data);
+
+      // Handle the response - axios should automatically parse JSON
+      const responseData = res.data;
+
+      if (responseData?.success) {
         toast.success("OTP sent to your email!");
         navigate("/verify", { state: { customer: formData } });
       } else {
-        toast.error(res.data?.message || "Failed to send OTP");
+        console.error("OTP Error:", responseData);
+        toast.error(responseData?.message || "Failed to send OTP");
         // Clear sessionStorage on failure
         sessionStorage.removeItem('registrationOTP');
         sessionStorage.removeItem('registrationEmail');
