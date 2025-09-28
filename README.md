@@ -7,6 +7,7 @@ This project focuses on the admin side of the project. If you want to check the 
 - Added Amenity Management to handle Requests
 - New Notification feature when a new Pending Amenity Request has been recieved
 - Also changed the File names inside Admin. Just removed "Admin-(insert file name here).jsx"
+- Forgot to mention, I've seperated the file locations inside "App.js" under the name "Admin Side Here" to make it easier to distinguish
 - Thats it 😀
 
 ## Available Scripts
