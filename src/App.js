@@ -2,18 +2,19 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 
 
-
-import AdminRoomsList from './pages/admin/AdminRoomsList';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminProfile from './pages/admin/AdminProfile';
-import AdminBookingList from './pages/admin/AdminBookingList';
-import AdminCalendar from './pages/admin/AdminCalendar';
-import AdminGuestProfile from './pages/admin/AdminGuestProfile';
-import AdminPayments from './pages/admin/AdminPayments';
-import AdminRequestedAmenities from './pages/admin/AdminRequestedAmenities';
-import AdminReviews from './pages/admin/AdminReviews';
-import AdminTransactionHis from './pages/admin/AdminTransactionHis';
-import AdminVisitorsLog from './pages/admin/AdminVisitorsLog';
+// ------------------------------------------------------------ Admin Side Here ------------------------------------------------------------
+import AdminRoomsList from './pages/admin/RoomsList';
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminProfile from './pages/admin/Profile';
+import AdminBookingList from './pages/admin/BookingList';
+import AdminCalendar from './pages/admin/Calendar';
+import AdminGuestProfile from './pages/admin/GuestProfile';
+import AdminPayments from './pages/admin/Payments';
+import AdminRequestedAmenities from './pages/admin/RequestedAmenities';
+import AdminBookingRoomSelection from './pages/admin/SubPages/BookingRoomSelection';
+import AdminReviews from './pages/admin/Reviews';
+import AdminTransactionHis from './pages/admin/TransactionHis';
+import AdminVisitorsLog from './pages/admin/VisitorsLog';
 import AdminAmenityMaster from './pages/admin/Master_Files/AmenityMaster';
 import AdminChargesCategory from './pages/admin/Master_Files/ChargesCategory';
 import AdminChargeMaster from './pages/admin/Master_Files/ChargeMaster';
@@ -36,6 +37,9 @@ import ChooseRooms from './pages/admin/WalkIn_Folder/ChooseRooms';
 import PaymentMethod from './pages/admin/WalkIn_Folder/PaymentMethod';
 import Confirmation from './pages/admin/WalkIn_Folder/Confirmation';
 import { WalkInProvider } from './pages/admin/WalkIn_Folder/WalkInContext';
+
+//  ------------------------------------------------------------ End of Admin Pages ------------------------------------------------------------
+
 
 // Authentication
 import Login from './pages/UserAuth_Folder/Login';
@@ -121,6 +125,7 @@ function App() {
                 <Route path="/admin/guestprofile" element={<AdminGuestProfile />} />
                 <Route path="/admin/payments" element={<AdminPayments />} />
                 <Route path="/admin/requestedamenities" element={<AdminRequestedAmenities />} />
+                <Route path="/admin/bookingroomselection" element={<AdminBookingRoomSelection />} />
                 <Route path="/admin/reviews" element={<AdminReviews />} />
                 <Route path="/admin/transactionhistory" element={<AdminTransactionHis />} />
                 <Route path="/admin/visitorslog" element={<AdminVisitorsLog />} />

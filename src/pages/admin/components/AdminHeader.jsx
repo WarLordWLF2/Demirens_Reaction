@@ -1,9 +1,81 @@
-import React from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import ThemeToggle from '../../../components/layout/ThemeToggle'
 import Sidebar from './Sidebar'
-import { Bell } from 'lucide-react'  // import Bell icon
+import { Bell } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import axios from 'axios'
 
-function AdminHeader({ onCollapse }) {
+function AdminHeader({ onCollapse, notificationRefreshTrigger = 0, resetNotificationsOnPage = false }) {
+  const [pendingCount, setPendingCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const navigate = useNavigate()
+
+  const APIConn = `${localStorage.url}admin.php`
+
+  const fetchPendingCount = useCallback(async () => {
+    try {
+      const formData = new FormData()
+      formData.append('method', 'get_pending_amenity_count')
+      
+      const response = await axios.post(APIConn, formData)
+      const result = response.data
+      
+      if (result.success) {
+        setPendingCount(result.pending_count || 0)
+      } else {
+        setPendingCount(0)
+      }
+    } catch (error) {
+      console.error('Error fetching pending amenity count:', error)
+      setPendingCount(0)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [APIConn])
+
+  useEffect(() => {
+    fetchPendingCount()
+    
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(fetchPendingCount, 30000)
+    
+    return () => clearInterval(interval)
+  }, [fetchPendingCount])
+
+  // Watch for notification refresh trigger
+  useEffect(() => {
+    if (notificationRefreshTrigger > 0) {
+      fetchPendingCount()
+    }
+  }, [notificationRefreshTrigger, fetchPendingCount])
+
+  // Reset notifications when on the amenities page
+  useEffect(() => {
+    if (resetNotificationsOnPage && pendingCount > 0) {
+      setPendingCount(0)
+    }
+  }, [resetNotificationsOnPage, pendingCount])
+
+  // Function to refresh count when called from parent components
+  const refreshNotificationCount = useCallback(() => {
+    fetchPendingCount()
+  }, [fetchPendingCount])
+
+  // Handle bell click - navigate to amenities page and reset counter
+  const handleBellClick = useCallback(() => {
+    // Reset the notification count to 0
+    setPendingCount(0)
+    
+    // Navigate to the AdminRequestedAmenities page
+    navigate('/admin/requestedamenities')
+  }, [navigate])
+
+  // Expose refresh function to parent if needed
+  React.useImperativeHandle(onCollapse, () => ({
+    refreshNotifications: refreshNotificationCount
+  }))
+
   return (
     <div className="flex justify-between items-center p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
       {/* Sidebar on the left */}
@@ -20,12 +92,31 @@ function AdminHeader({ onCollapse }) {
               DEMIREN HOTEL AND RESTAURANT
             </h1>
 
-            {/* Notification bell */}
-            <button className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-              <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-              {/* Notification dot */}
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            {/* Notification bell with proper positioning */}
+            <div className="relative">
+              <button 
+                onClick={handleBellClick}
+                className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 cursor-pointer"
+                title="Pending Amenity Requests - Click to view"
+              >
+                <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                
+                {/* Notification badge - positioned absolutely */}
+                {pendingCount > 0 && (
+                  <Badge
+                    className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full px-1.5 text-xs font-bold bg-red-500 hover:bg-red-600 text-white border-2 border-white dark:border-gray-900 shadow-lg animate-pulse"
+                    variant="destructive"
+                  >
+                    {pendingCount > 99 ? '99+' : pendingCount}
+                  </Badge>
+                )}
+                
+                {/* Loading indicator */}
+                {isLoading && (
+                  <div className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-gray-400 animate-pulse"></div>
+                )}
+              </button>
+            </div>
 
             <ThemeToggle />
           </div>

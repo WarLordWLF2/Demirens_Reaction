@@ -16,7 +16,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 function Login() {
     const { useEffect, useState } = React;
@@ -129,7 +129,21 @@ function Login() {
 
 
     return (
-        <div className="min-h-screen flex flex-col md:flex-row bg-[#F7FBFC]">
+        <div className="min-h-screen flex flex-col md:flex-row bg-[#F7FBFC] relative">
+            {/* Back to Landing Page Button - Top Left */}
+            <div className="absolute top-4 left-4 z-10">
+                <Button
+                    variant="ghost"
+                    asChild
+                    className="text-[#769FCD] hover:text-[#5578a6] hover:bg-[#769FCD]/10 p-2 h-auto bg-white/80 backdrop-blur-sm"
+                >
+                    <Link to="/" className="flex items-center gap-2 text-sm">
+                        <ArrowLeft size={16} />
+                        Back to Home
+                    </Link>
+                </Button>
+            </div>
+            
             {/* Left side - Hidden on mobile */}
             <div className="hidden md:flex md:w-1/2 bg-gradient-to-b from-[#113f67] via-[#34699A] to-[#226597]344rd p-6 sm:p-8 md:p-10 flex-col justify-center items-center text-white">
                 <div className="max-w-md mx-auto space-y-4 sm:space-y-6">
