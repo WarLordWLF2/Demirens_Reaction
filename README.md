@@ -6,6 +6,8 @@ This project focuses on the admin side of the project. If you want to check the 
 - Added an "Extend Stay" feature
 - Added Amenity Management to handle Requests
 - New Notification feature when a new Pending Amenity Request has been recieved
+- Also changed the File names inside Admin. Just removed "Admin-(insert file name here).jsx"
+- Thats it 😀
 
 ## Available Scripts
 
