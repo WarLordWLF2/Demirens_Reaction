@@ -1,6 +1,11 @@
-# Getting Started with Create React App
+# Demiren Hotel System (Admin Side)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project focuses on the admin side of the project. If you want to check the customer's side click the link to check my friend's project [beabanana](https://github.com/wannabeayours/Reactjs-Demirens).
+
+### `Update Logs`
+- Added an "Extend Stay" feature
+- Added Amenity Management to handle Requests
+- New Notification feature when a new Pending Amenity Request has been recieved
 
 ## Available Scripts
 
