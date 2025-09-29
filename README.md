@@ -1,14 +1,9 @@
-# Demiren Hotel System (Admin Side)
+# Demiren Hotel System (Admin Side) 3.0.1
 
 This project focuses on the admin side of the project. If you want to check the customer's side click the link to check my friend's project [beabanana](https://github.com/wannabeayours/Reactjs-Demirens).
 
 ### `Update Logs`
-- Added an "Extend Stay" feature
-- Added Amenity Management to handle Requests
-- New Notification feature when a new Pending Amenity Request has been recieved
-- Also changed the File names inside Admin. Just removed "Admin-(insert file name here).jsx"
-- Forgot to mention, I've seperated the file locations inside "App.js" under the name "Admin Side Here" to make it easier to distinguish
-- Thats it 😀
+- Updated the Extend Room feature where the Customer cannot extend their stay if someone already booked the same room at a later date
 
 ## Available Scripts
 
