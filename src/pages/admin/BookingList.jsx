@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { CalendarIcon, Search, Filter, ArrowRightLeft, Eye, Settings, CalendarPlus } from "lucide-react"
+import { CalendarIcon, Search, Filter, ArrowRightLeft, Eye, Settings, CalendarPlus, ChevronDown, ChevronUp } from "lucide-react"
 import { format } from "date-fns"
 import { formatDateTime } from "@/lib/utils"
 import RoomChangeSheet from "./SubPages/RoomChangeSheet"
@@ -54,6 +54,7 @@ function AdminBookingList() {
   const [dateWarning, setDateWarning] = useState('');
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('2'); // Default to Cash
+  const [isRoomDetailsExpanded, setIsRoomDetailsExpanded] = useState(false);
 
   const getAllStatus = useCallback(async () => {
     const formData = new FormData();
@@ -135,7 +136,8 @@ function AdminBookingList() {
         booking.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         booking.customer_phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
+        booking.nationality?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (booking.roomtype_name?.toLowerCase().includes(searchTerm.toLowerCase()) && getRoomTypeDisplay(booking) !== 'More Rooms...')
       );
     }
 
@@ -202,6 +204,7 @@ function AdminBookingList() {
   const handleViewCustomerDetails = (booking) => {
     console.log('View Customer Details clicked for booking:', booking);
     setSelectedBooking(booking);
+    setIsRoomDetailsExpanded(false); // Reset dropdown state when opening modal
     setShowCustomerDetails(true);
   };
 
@@ -481,23 +484,52 @@ function AdminBookingList() {
     );
   };
 
-  const renderOrPending = (value) => {
-    const stringValue = (value ?? '').toString().trim();
-    if (!stringValue || stringValue.toLowerCase() === 'null') return 'Pending';
+
+  const getRoomTypeDisplay = (booking) => {
+    // Check if booking has multiple rooms by examining room_ids array
+    const hasMultipleRooms = Array.isArray(booking.room_ids) && booking.room_ids.length > 1;
     
-    // Handle room numbers formatting - remove any decimal places for room counts
-    if (stringValue.includes('.')) {
-      const parts = stringValue.split('.');
-      if (parts.length === 2 && parts[1] === '0') {
-        // If it's like "3.0", just show "3"
-        return parts[0];
-      } else if (parts.length === 2 && parts[1] !== '0') {
-        // If it's like "3.4", show as "3-4" or handle appropriately
-        return `${parts[0]}-${parts[1]}`;
-      }
+    // Also check room_numbers for multiple rooms
+    const roomNumbers = booking.room_numbers;
+    const hasMultipleNumbers = roomNumbers && 
+      (roomNumbers.includes(',') || roomNumbers.includes(';') || 
+       (roomNumbers.includes('-') && roomNumbers !== roomNumbers.replace('-', '')));
+    
+    if (hasMultipleRooms || hasMultipleNumbers) {
+      return 'More Rooms...';
     }
     
-    return stringValue;
+    return booking.roomtype_name || 'Standard Room';
+  };
+
+  const getRoomTypeGroupsFromBooking = (booking) => {
+    // Parse room numbers from the booking
+    if (!booking.room_numbers) {
+      return [{ roomType: booking.roomtype_name || 'Standard Room', count: 1, roomNumbers: ['Pending'] }];
+    }
+
+    const roomNumbers = booking.room_numbers.toString().split(',').map(num => num.trim());
+    const roomTypeGroups = {};
+    
+    // Group rooms by type
+    roomNumbers.forEach(roomNum => {
+      // Find room data for this room number
+      const roomInfo = roomData.find(room => room.roomnumber_id.toString() === roomNum);
+      const roomType = roomInfo ? roomInfo.roomtype_name : 'Standard Room';
+      
+      if (!roomTypeGroups[roomType]) {
+        roomTypeGroups[roomType] = {
+          roomType: roomType,
+          count: 0,
+          roomNumbers: []
+        };
+      }
+      
+      roomTypeGroups[roomType].count += 1;
+      roomTypeGroups[roomType].roomNumbers.push(roomNum);
+    });
+
+    return Object.values(roomTypeGroups);
   };
 
   return (
@@ -713,7 +745,7 @@ function AdminBookingList() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table className="w-full min-w-[900px]">
+                <Table className="w-full min-w-[1050px]">
                   <TableCaption className="text-sm text-gray-500 dark:text-gray-400 mt-4">
                     A comprehensive list of all hotel bookings
                   </TableCaption>
@@ -721,6 +753,7 @@ function AdminBookingList() {
                     <TableRow className="bg-gray-50 dark:bg-gray-700 border-b">
                       <TableHead className="font-semibold text-gray-900 dark:text-white text-center w-[100px]">Reference No</TableHead>
                       <TableHead className="font-semibold text-gray-900 dark:text-white w-[200px]">Customer</TableHead>
+                      <TableHead className="font-semibold text-gray-900 dark:text-white text-center w-[150px]">Room Type</TableHead>
                       <TableHead className="font-semibold text-gray-900 dark:text-white text-center w-[150px]">Check-in</TableHead>
                       <TableHead className="font-semibold text-gray-900 dark:text-white text-center w-[150px]">Check-out</TableHead>
                       <TableHead className="font-semibold text-gray-900 dark:text-white text-center w-[120px]">Amount</TableHead>
@@ -747,6 +780,15 @@ function AdminBookingList() {
                                 )}
                                 <div className="text-xs text-gray-500 dark:text-gray-400 font-mono truncate">{b.customer_phone}</div>
                               </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-gray-700 dark:text-gray-300 text-center py-3">
+                            <div className={`text-sm font-medium px-2 py-1 rounded-full ${
+                              getRoomTypeDisplay(b) === 'More Rooms...' 
+                                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300' 
+                                : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                            }`}>
+                              {getRoomTypeDisplay(b)}
                             </div>
                           </TableCell>
                           <TableCell className="text-gray-700 dark:text-gray-300 text-center py-3">
@@ -816,34 +858,37 @@ function AdminBookingList() {
 
         {/* Customer Details Modal */}
         <Dialog open={showCustomerDetails} onOpenChange={setShowCustomerDetails}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader className="text-center pb-6 border-b">
               <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">
-                Customer & Booking Details
+                Booking Information
+                {selectedBooking && (
+                  <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-3">
+                    #{selectedBooking.booking_id || 'N/A'}
+                  </span>
+                )}
               </DialogTitle>
             </DialogHeader>
 
             {selectedBooking && (
-              <div className="space-y-6">
-                {/* Customer Information */}
-                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Customer Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-6 mt-6">
+                {/* Status Banner */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 border border-blue-200 dark:border-blue-800">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-transparent rounded-bl-full"></div>
+                  <div className="relative flex items-center justify-between">
                     <div>
-                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Customer Name</label>
-                      <p className="text-gray-900 dark:text-white font-medium">{selectedBooking.customer_name || 'N/A'}</p>
+                      <div className="flex items-center gap-3 mb-2">
+                        {getStatusBadge(selectedBooking.booking_status)}
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Booking Status</span>
+                      </div>
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedBooking.customer_name}</h2>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{selectedBooking.customer_email}</p>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
-                      <p className="text-gray-900 dark:text-white">{selectedBooking.customer_email || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
-                      <p className="text-gray-900 dark:text-white">{selectedBooking.customer_phone || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Nationality</label>
-                      <p className="text-gray-900 dark:text-white">{selectedBooking.nationality || 'N/A'}</p>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        ₱{selectedBooking.total_amount?.toLocaleString() || '0'}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Total Amount</div>
                     </div>
                   </div>
                 </div>
@@ -868,20 +913,90 @@ function AdminBookingList() {
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Check-out Date</label>
                       <p className="text-gray-900 dark:text-white">{formatDateTime(selectedBooking.booking_checkout_dateandtime)}</p>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Room Numbers</label>
-                      <p className="text-gray-900 dark:text-white">{renderOrPending(selectedBooking.room_numbers)}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Amount</label>
-                      <p className="text-gray-900 dark:text-white font-semibold">₱{selectedBooking.total_amount?.toLocaleString() || 'N/A'}</p>
-                    </div>
                     {selectedBooking.downpayment && (
                       <div>
                         <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Downpayment</label>
                         <p className="text-gray-900 dark:text-white font-semibold">₱{selectedBooking.downpayment.toLocaleString()}</p>
                       </div>
                     )}
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Amount</label>
+                      <p className="text-gray-900 dark:text-white font-semibold">₱{selectedBooking.total_amount?.toLocaleString() || 'N/A'}</p>
+                    </div>
+                     <div>
+                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Room Details</label>
+                       <div className="text-gray-900 dark:text-white">
+                         {(() => {
+                           const roomGroups = getRoomTypeGroupsFromBooking(selectedBooking);
+                           const totalRooms = roomGroups.reduce((sum, group) => sum + group.count, 0);
+                           
+                           return (
+                             <div className="space-y-2">
+                               {/* Summary Row with Dropdown Button */}
+                               <div className="flex items-center justify-between">
+                                 <div className="flex items-center gap-2">
+                                   {roomGroups.length > 1 ? (
+                                     <span className="font-semibold text-orange-600 dark:text-orange-400">
+                                       Multiple Room Types ({totalRooms} total rooms)
+                                     </span>
+                                   ) : (
+                                     <span className="font-semibold">
+                                       {roomGroups[0]?.roomType || 'Standard Room'}
+                                       {roomGroups[0]?.count > 1 && (
+                                         <span className="ml-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs font-medium">
+                                           ×{roomGroups[0].count}
+                                         </span>
+                                       )}
+                                     </span>
+                                   )}
+                                 </div>
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   onClick={() => setIsRoomDetailsExpanded(!isRoomDetailsExpanded)}
+                                   className="h-7 px-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                 >
+                                   {isRoomDetailsExpanded ? (
+                                     <>
+                                       <ChevronUp className="w-4 h-4" />
+                                       <span className="ml-1 text-xs">Hide Details</span>
+                                     </>
+                                   ) : (
+                                     <>
+                                       <ChevronDown className="w-4 h-4" />
+                                       <span className="ml-1 text-xs">Show Details</span>
+                                     </>
+                                   )}
+                                 </Button>
+                               </div>
+
+                               {/* Collapsible Room Details */}
+                               {isRoomDetailsExpanded && (
+                                 <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+                                   <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
+                                     {roomGroups.map((group, index) => (
+                                       <div key={index} className="bg-gray-50 dark:bg-gray-800 p-3 rounded border">
+                                         <div className={group.count > 1 ? 'flex items-center gap-2' : ''}>
+                                           <span className="font-semibold text-sm">{group.roomType}</span>
+                                           {group.count > 1 && (
+                                             <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs font-medium">
+                                               ×{group.count}
+                                             </span>
+                                           )}
+                                         </div>
+                                         <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                           Room #{group.roomNumbers.join(', #')}
+                                         </div>
+                                       </div>
+                                     ))}
+                                   </div>
+                                 </div>
+                               )}
+                             </div>
+                           );
+                         })()}
+                       </div>
+                     </div>
                   </div>
                 </div>
 
@@ -1060,54 +1175,26 @@ function AdminBookingList() {
                          <CalendarIcon className="w-4 h-4" />
                          Select New Checkout Date
                        </label>
-                       <Popover>
-                         <PopoverTrigger asChild>
-                           <Button 
-                             variant="outline" 
-                             className="w-full justify-start text-left font-normal h-12 border-2 hover:border-blue-500 transition-colors"
-                           >
-                             <CalendarIcon className="mr-2 h-4 w-4" />
-                             {newCheckoutDate ? format(newCheckoutDate, "PPP") : "Select new checkout date"}
-                           </Button>
-                         </PopoverTrigger>
-                         <PopoverContent className="w-auto p-0" align="start">
-                           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700">
-                           <Calendar
-                             mode="single"
-                             selected={newCheckoutDate}
-                             onSelect={handleDateSelect}
-                             initialFocus
-                             disabled={(date) => {
-                               const currentCheckout = new Date(selectedBooking.booking_checkout_dateandtime);
-                               return date <= currentCheckout;
-                             }}
-                             className="rounded-lg"
-                               classNames={{
-                                 months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                                 month: "space-y-4",
-                                 caption: "flex justify-center pt-1 relative items-center",
-                                 caption_label: "text-sm font-medium text-gray-900 dark:text-white",
-                                 nav: "space-x-1 flex items-center",
-                                 nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white",
-                                 nav_button_previous: "absolute left-1",
-                                 nav_button_next: "absolute right-1",
-                                 table: "w-full border-collapse space-y-1",
-                                 head_row: "flex",
-                                 head_cell: "text-gray-500 dark:text-gray-400 rounded-md w-9 font-normal text-[0.8rem]",
-                                 row: "flex w-full mt-2",
-                                 cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-gray-100 dark:[&:has([aria-selected].day-outside)]:bg-gray-800 [&:has([aria-selected])]:bg-blue-100 dark:[&:has([aria-selected])]:bg-blue-800 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                                 day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors",
-                                 day_selected: "bg-blue-600 text-white hover:bg-blue-700 focus:bg-blue-600 focus:text-white",
-                                 day_today: "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold",
-                                 day_outside: "day-outside text-gray-400 dark:text-gray-500 opacity-50 aria-selected:bg-gray-100 dark:aria-selected:bg-gray-800 aria-selected:text-gray-400 dark:aria-selected:text-gray-500 aria-selected:opacity-30",
-                                 day_disabled: "text-gray-400 dark:text-gray-500 opacity-50 cursor-not-allowed",
-                                 day_range_middle: "aria-selected:bg-blue-100 dark:aria-selected:bg-blue-800 aria-selected:text-gray-900 dark:aria-selected:text-white",
-                                 day_hidden: "invisible",
-                               }}
-                             />
-                           </div>
-                         </PopoverContent>
-                       </Popover>
+                       <Input
+                         type="date"
+                         value={newCheckoutDate ? newCheckoutDate.toISOString().split('T')[0] : ''}
+                         onChange={(e) => {
+                           const dateValue = e.target.value;
+                           if (dateValue) {
+                             const selectedDate = new Date(dateValue);
+                             handleDateSelect(selectedDate);
+                           } else {
+                             setDateWarning('');
+                             setNewCheckoutDate(null);
+                           }
+                         }}
+                         min={(() => {
+                           const currentCheckout = new Date(selectedBooking.booking_checkout_dateandtime);
+                           currentCheckout.setDate(currentCheckout.getDate() + 1);
+                           return currentCheckout.toISOString().split('T')[0];
+                         })()}
+                         className="w-full h-12 border-2 hover:border-blue-500 focus:border-blue-500 transition-colors text-center"
+                       />
                        {dateWarning ? (
                          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
                            <p className="text-xs text-red-700 dark:text-red-300 flex items-center gap-2">
