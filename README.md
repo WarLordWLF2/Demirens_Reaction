@@ -1,74 +1,21 @@
-# Demiren Hotel System (Admin Side) 3.0.1
+# Demiren Hotel System (Admin Side) 3.1.1
 
 This project focuses on the admin side of the project. If you want to check the customer's side click the link to check my friend's project [beabanana](https://github.com/wannabeayours/Reactjs-Demirens).
 
-### `Update Logs`
-- Updated the Extend Room feature where the Customer cannot extend their stay if someone already booked the same room at a later date
+### Update Logs
 
-## Available Scripts
+## `General`
+- Set the Check-in to be at 2PM and Check-out at 12PM
+- Added an Invoice page
+- Fixed an issue when adding a new Walk-in in `Add Walk-In`
+- Changed Input Types from Numbers to Text
+- Slightly changed the UI in `PaymentMethod.jsx` to make the total more noticable
 
-In the project directory, you can run:
+## `Booking List Page`
+- Remaining Balance is shown now
+- Disabled Extend and Change Rooms if Customer is Pending
 
-### `npm start`
-
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
-
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-# True_DemReact
+## `Add Amenities Page`
+- Fixed a Bug when Adding Amenities, now it confirms you successfully added a new amenity
+- Changed the UI in `AddAmenityRequestModal.jsx` modal
+- Changed the UI in `BookingRoomSelection.jsx` modal
