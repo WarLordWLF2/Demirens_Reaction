@@ -7,7 +7,7 @@ This project focuses on the admin side of the project. If you want to check the 
 ## `General`
 - Set the Check-in to be at 2PM and Check-out at 12PM
 - Added an Invoice page
-- Fixed an issue when adding a new Walk-in in `Add Walk-In`
+- Fixed an issue when adding a new Walk-in in `WalkIn_Folder`
 - Changed Input Types from Numbers to Text
 - Slightly changed the UI in `PaymentMethod.jsx` to make the total more noticable
 
