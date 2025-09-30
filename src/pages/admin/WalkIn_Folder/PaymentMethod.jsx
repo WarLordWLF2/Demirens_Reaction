@@ -63,10 +63,10 @@ const PaymentMethod = () => {
   const vat = subtotal * 0.12;
   const total = subtotal + vat - (Number(discount) || 0);
 
-  // Autofill amount paid when method or total changes
+  // Set default amount to 50% of total when method changes
   useEffect(() => {
     if (method && !amountPaid) {
-      setAmountPaid(total.toFixed(2));
+      setAmountPaid((total * 0.5).toFixed(2));
     }
   }, [method, total]);
 
@@ -81,8 +81,9 @@ const PaymentMethod = () => {
       return;
     }
 
-    if (Number(amountPaid) < total) {
-      alert(`The amount paid must be at least ₱${total.toLocaleString()}`);
+    const minimumPayment = total * 0.5; // 50% of total
+    if (Number(amountPaid) < minimumPayment) {
+      alert(`The amount paid must be at least 50% of the total (₱${minimumPayment.toLocaleString()})`);
       return;
     }
 
@@ -152,10 +153,15 @@ const PaymentMethod = () => {
               Amount Paid <span className="text-red-500">*</span>
             </Label>
             <Input
-              type="number"
+              type="text"
               placeholder="Enter amount"
               value={amountPaid}
-              onChange={(e) => setAmountPaid(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                  setAmountPaid(value);
+                }
+              }}
             />
           </div>
 
@@ -165,10 +171,15 @@ const PaymentMethod = () => {
               Discount <span className="text-gray-500 text-sm">(optional)</span>
             </Label>
             <Input
-              type="number"
+              type="text"
               placeholder="Enter discount"
               value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                  setDiscount(value);
+                }
+              }}
             />
           </div>
 
@@ -193,7 +204,7 @@ const PaymentMethod = () => {
             disabled={
               !method ||
               !amountPaid ||
-              Number(amountPaid) < total ||
+              Number(amountPaid) < (total * 0.5) ||
               (method && method.toLowerCase() !== 'cash' && !referenceNumber.trim())
             }
           >
@@ -240,7 +251,14 @@ const PaymentMethod = () => {
           <p><strong>VAT (12%):</strong> ₱{vat.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
           <p><strong>Discount:</strong> ₱{(Number(discount) || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
           <hr />
-          <p className="text-lg font-bold">Total: ₱{total.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg p-4 mt-4">
+            <p className="text-xl font-bold text-green-700 dark:text-green-300 text-center">
+              Total: ₱{total.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            </p>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            <strong>Minimum Payment (50%):</strong> ₱{(total * 0.5).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+          </p>
         </CardContent>
       </Card>
     </div>

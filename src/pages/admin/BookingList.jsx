@@ -19,11 +19,8 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { CalendarIcon, Search, Filter, ArrowRightLeft, Eye, Settings, CalendarPlus, ChevronDown, ChevronUp } from "lucide-react"
-import { format } from "date-fns"
+import { Search, Filter, ArrowRightLeft, Eye, Settings, CalendarPlus, ChevronDown, ChevronUp, CalendarIcon } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
 import RoomChangeSheet from "./SubPages/RoomChangeSheet"
 
@@ -48,13 +45,15 @@ function AdminBookingList() {
   const [rooms, setRooms] = useState([]);
   const [showExtendBooking, setShowExtendBooking] = useState(false);
   const [newCheckoutDate, setNewCheckoutDate] = useState(null);
-  const [extendStep, setExtendStep] = useState(1); // 1: Date selection, 2: Payment review, 3: Payment processing
+  const [extendStep, setExtendStep] = useState(1); // 1: Room selection (if multi-room), 2: Date selection, 3: Payment review, 4: Payment processing
   const [extensionCalculation, setExtensionCalculation] = useState(null);
   const [roomData, setRoomData] = useState([]);
   const [dateWarning, setDateWarning] = useState('');
-  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentAmount, setPaymentAmount] = useState('0');
   const [paymentMethod, setPaymentMethod] = useState('2'); // Default to Cash
   const [isRoomDetailsExpanded, setIsRoomDetailsExpanded] = useState(false);
+  const [selectedRoomForExtension, setSelectedRoomForExtension] = useState(null);
+  const [isMultiRoomBooking, setIsMultiRoomBooking] = useState(false);
 
   const getAllStatus = useCallback(async () => {
     const formData = new FormData();
@@ -223,11 +222,21 @@ function AdminBookingList() {
       return;
     }
     
+    // Check if this is a multi-room booking
+    const hasMultipleRooms = Array.isArray(booking.room_ids) && booking.room_ids.length > 1;
+    const hasMultipleNumbers = booking.room_numbers && 
+      (booking.room_numbers.includes(',') || booking.room_numbers.includes(';') || 
+       (booking.room_numbers.includes('-') && booking.room_numbers !== booking.room_numbers.replace('-', '')));
+    
+    const isMultiRoom = hasMultipleRooms || hasMultipleNumbers;
+    setIsMultiRoomBooking(isMultiRoom);
+    
     setNewCheckoutDate(null);
+    setSelectedRoomForExtension(null);
     setExtendStep(1);
     setExtensionCalculation(null);
     setDateWarning('');
-    setPaymentAmount(0);
+    setPaymentAmount('0');
     setPaymentMethod('2');
     setShowExtendBooking(true);
   };
@@ -360,28 +369,41 @@ function AdminBookingList() {
   };
 
   const handleExtendBookingNext = () => {
-    if (!selectedBooking || !newCheckoutDate) {
-      toast.error('Please select a new checkout date');
+    // Step 1: Room selection (if multi-room)
+    if (extendStep === 1 && isMultiRoomBooking) {
+      if (!selectedRoomForExtension) {
+        toast.error('Please select a room to extend');
+        return;
+      }
+      setExtendStep(2);
       return;
     }
+    
+    // Step 2: Date selection (or Step 1 for single room)
+    if ((extendStep === 1 && !isMultiRoomBooking) || (extendStep === 2 && isMultiRoomBooking)) {
+      if (!selectedBooking || !newCheckoutDate) {
+        toast.error('Please select a new checkout date');
+        return;
+      }
 
-    // Validate that new checkout date is after current checkout date
-    const currentCheckout = new Date(selectedBooking.booking_checkout_dateandtime);
-    if (newCheckoutDate <= currentCheckout) {
-      toast.error('New checkout date must be after the current checkout date');
-      return;
+      // Validate that new checkout date is after current checkout date
+      const currentCheckout = new Date(selectedBooking.booking_checkout_dateandtime);
+      if (newCheckoutDate <= currentCheckout) {
+        toast.error('New checkout date must be after the current checkout date');
+        return;
+      }
+
+      // Calculate extension payment
+      const calculation = calculateExtensionPayment();
+      if (!calculation) {
+        toast.error('Unable to calculate extension payment');
+        return;
+      }
+
+      setExtensionCalculation(calculation);
+      setPaymentAmount(calculation.additionalAmount.toString()); // Set default payment amount to full amount
+      setExtendStep(isMultiRoomBooking ? 3 : 2);
     }
-
-    // Calculate extension payment
-    const calculation = calculateExtensionPayment();
-    if (!calculation) {
-      toast.error('Unable to calculate extension payment');
-      return;
-    }
-
-    setExtensionCalculation(calculation);
-    setPaymentAmount(calculation.additionalAmount); // Set default payment amount to full amount
-    setExtendStep(2);
   };
 
   const handlePaymentNext = () => {
@@ -390,12 +412,13 @@ function AdminBookingList() {
       return;
     }
 
-    if (paymentAmount < 0 || paymentAmount > extensionCalculation.additionalAmount) {
+    const numPaymentAmount = parseFloat(paymentAmount) || 0;
+    if (numPaymentAmount < 0 || numPaymentAmount > extensionCalculation.additionalAmount) {
       toast.error('Payment amount must be between 0 and the total additional amount');
       return;
     }
 
-    setExtendStep(3);
+    setExtendStep(isMultiRoomBooking ? 4 : 3);
   };
 
   const handleExtendBookingSubmit = async () => {
@@ -404,20 +427,18 @@ function AdminBookingList() {
       return;
     }
 
-    if (paymentAmount < 0 || paymentAmount > extensionCalculation.additionalAmount) {
+    const numPaymentAmount = parseFloat(paymentAmount) || 0;
+    if (numPaymentAmount < 0 || numPaymentAmount > extensionCalculation.additionalAmount) {
       toast.error('Invalid payment amount');
       return;
     }
 
     // Get current employee/admin ID
     const currentEmployeeId = localStorage.getItem('employeeId') || 1;
-    const currentCheckout = new Date(selectedBooking.booking_checkout_dateandtime);
 
-    // Format the new checkout date properly
+    // Format the new checkout date properly - use 12:00 PM (noon) for checkout
     const newCheckoutDateTime = new Date(newCheckoutDate);
-    newCheckoutDateTime.setHours(currentCheckout.getHours());
-    newCheckoutDateTime.setMinutes(currentCheckout.getMinutes());
-    newCheckoutDateTime.setSeconds(currentCheckout.getSeconds());
+    newCheckoutDateTime.setHours(12, 0, 0, 0); // Set to 12:00 PM (noon)
 
     // Build JSON data for the API
     const jsonData = {
@@ -426,27 +447,37 @@ function AdminBookingList() {
       new_checkout_date: newCheckoutDateTime.toISOString().slice(0, 19).replace('T', ' '),
       additional_nights: extensionCalculation.additionalNights,
       additional_amount: extensionCalculation.additionalAmount,
-      payment_amount: paymentAmount,
+      payment_amount: numPaymentAmount,
       payment_method_id: paymentMethod,
       room_price: extensionCalculation.roomPrice
     };
 
+    // Add room selection for multi-room bookings
+    if (isMultiRoomBooking && selectedRoomForExtension) {
+      jsonData.selected_room_id = selectedRoomForExtension.roomnumber_id;
+      jsonData.selected_room_type = selectedRoomForExtension.roomtype_name;
+    }
 
     // Build FormData and submit to API
     const formData = new FormData();
-    formData.append('method', 'extendBookingWithPayment');
+    formData.append('method', isMultiRoomBooking ? 'extendMultiRoomBookingWithPayment' : 'extendBookingWithPayment');
     formData.append('json', JSON.stringify(jsonData));
 
     try {
       const res = await axios.post(APIConn, formData);
       if (res?.data?.success) {
-        toast.success(`Booking extended successfully for ${selectedBooking.reference_no}`);
+        const roomInfo = isMultiRoomBooking && selectedRoomForExtension 
+          ? ` for Room ${selectedRoomForExtension.roomnumber_id}` 
+          : '';
+        toast.success(`Booking extended successfully${roomInfo} for ${selectedBooking.reference_no}`);
         setShowExtendBooking(false);
         setSelectedBooking(null);
         setNewCheckoutDate(null);
+        setSelectedRoomForExtension(null);
+        setIsMultiRoomBooking(false);
         setExtendStep(1);
         setExtensionCalculation(null);
-        setPaymentAmount(0);
+        setPaymentAmount('0');
         setPaymentMethod('2');
         getBookings();
       } else {
@@ -664,44 +695,24 @@ function AdminBookingList() {
 
               {/* Date From Filter */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">From Date</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateFrom ? format(dateFrom, "PPP") : "Select date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={dateFrom}
-                      onSelect={setDateFrom}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Check-In</label>
+                <Input
+                  type="date"
+                  value={dateFrom ? dateFrom.toISOString().split('T')[0] : ''}
+                  onChange={(e) => setDateFrom(e.target.value ? new Date(e.target.value) : null)}
+                  className="w-full"
+                />
               </div>
 
               {/* Date To Filter */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">To Date</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateTo ? format(dateTo, "PPP") : "Select date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={dateTo}
-                      onSelect={setDateTo}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Check-Out</label>
+                <Input
+                  type="date"
+                  value={dateTo ? dateTo.toISOString().split('T')[0] : ''}
+                  onChange={(e) => setDateTo(e.target.value ? new Date(e.target.value) : null)}
+                  className="w-full"
+                />
               </div>
             </div>
 
@@ -831,7 +842,8 @@ function AdminBookingList() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleExtendBooking(b)}
-                                className="text-xs h-7 px-3 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+                                disabled={b.booking_status === 'Pending'}
+                                className="text-xs h-7 px-3 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <CalendarPlus className="w-3 h-3 mr-1" />
                                 Extend
@@ -840,7 +852,8 @@ function AdminBookingList() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleChangeRoom(b)}
-                                className="text-xs h-7 px-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                disabled={b.booking_status === 'Pending'}
+                                className="text-xs h-7 px-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <ArrowRightLeft className="w-3 h-3 mr-1" />
                                 Room
@@ -922,6 +935,17 @@ function AdminBookingList() {
                     <div>
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Amount</label>
                       <p className="text-gray-900 dark:text-white font-semibold">₱{selectedBooking.total_amount?.toLocaleString() || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Remaining Balance</label>
+                      <p className="text-gray-900 dark:text-white font-semibold">
+                        ₱{(() => {
+                          const totalAmount = parseFloat(selectedBooking.total_amount) || 0;
+                          const downpayment = parseFloat(selectedBooking.downpayment) || 0;
+                          const remaining = Math.max(0, totalAmount - downpayment); // Ensure non-negative
+                          return remaining.toLocaleString();
+                        })()}
+                      </p>
                     </div>
                      <div>
                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Room Details</label>
@@ -1039,7 +1063,8 @@ function AdminBookingList() {
                       handleChangeRoom(selectedBooking);
                       setShowCustomerDetails(false);
                     }}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    disabled={selectedBooking.booking_status === 'Pending'}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ArrowRightLeft className="w-4 h-4 mr-2" />
                     Change Room
@@ -1129,12 +1154,15 @@ function AdminBookingList() {
                  Extend Booking
                  <div className="flex items-center gap-2 ml-auto">
                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                     Step {extendStep} of 3
+                     Step {extendStep} of {isMultiRoomBooking ? 4 : 3}
                    </span>
                    <div className="flex gap-1">
                      <div className={`w-2 h-2 rounded-full ${extendStep >= 1 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
                      <div className={`w-2 h-2 rounded-full ${extendStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
                      <div className={`w-2 h-2 rounded-full ${extendStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                     {isMultiRoomBooking && (
+                       <div className={`w-2 h-2 rounded-full ${extendStep >= 4 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                     )}
                    </div>
                  </div>
                </DialogTitle>
@@ -1167,13 +1195,80 @@ function AdminBookingList() {
                    </div>
                  </div>
 
-                 {extendStep === 1 && (
+                 {extendStep === 1 && isMultiRoomBooking && (
+                   <>
+                     {/* Room Selection for Multi-Room Bookings */}
+                     <div className="space-y-3">
+                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                         </svg>
+                         Select Room to Extend
+                       </label>
+                       <div className="space-y-2">
+                         {getRoomTypeGroupsFromBooking(selectedBooking).map((group, index) => (
+                           <div key={index} className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                             <div className="font-medium text-sm text-gray-900 dark:text-white mb-2">
+                               {group.roomType} {group.count > 1 && `(${group.count} rooms)`}
+                             </div>
+                             <div className="grid grid-cols-2 gap-2">
+                               {group.roomNumbers.map((roomNum, roomIndex) => {
+                                 const roomInfo = roomData.find(room => room.roomnumber_id.toString() === roomNum);
+                                 return (
+                                   <button
+                                     key={roomIndex}
+                                     onClick={() => setSelectedRoomForExtension(roomInfo || { roomnumber_id: roomNum, roomtype_name: group.roomType })}
+                                     className={`p-2 rounded border text-sm transition-colors ${
+                                       selectedRoomForExtension?.roomnumber_id?.toString() === roomNum
+                                         ? 'bg-blue-100 border-blue-500 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300'
+                                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
+                                     }`}
+                                   >
+                                     Room #{roomNum}
+                                   </button>
+                                 );
+                               })}
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+
+                     {/* Action Buttons */}
+                     <div className="flex justify-between pt-4">
+                       <Button 
+                         variant="outline" 
+                         onClick={() => setShowExtendBooking(false)}
+                         className="px-6"
+                       >
+                         Cancel
+                       </Button>
+                       <Button
+                         onClick={handleExtendBookingNext}
+                         className="bg-blue-600 hover:bg-blue-700 px-6"
+                         disabled={!selectedRoomForExtension}
+                       >
+                         Next: Select Date
+                         <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                         </svg>
+                       </Button>
+                     </div>
+                   </>
+                 )}
+
+                 {((extendStep === 1 && !isMultiRoomBooking) || (extendStep === 2 && isMultiRoomBooking)) && (
                    <>
                      {/* Date Selection */}
                      <div className="space-y-3">
                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                          <CalendarIcon className="w-4 h-4" />
                          Select New Checkout Date
+                         {isMultiRoomBooking && selectedRoomForExtension && (
+                           <span className="text-xs text-blue-600 dark:text-blue-400 ml-2">
+                             (Room #{selectedRoomForExtension.roomnumber_id})
+                           </span>
+                         )}
                        </label>
                        <Input
                          type="date"
@@ -1225,21 +1320,35 @@ function AdminBookingList() {
                        >
                          Cancel
                        </Button>
-                       <Button
-                         onClick={handleExtendBookingNext}
-                         className="bg-blue-600 hover:bg-blue-700 px-6"
-                         disabled={!newCheckoutDate}
-                       >
-                         Next: Review Payment
-                         <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                         </svg>
-                       </Button>
+                       <div className="flex gap-3">
+                         {isMultiRoomBooking && (
+                           <Button 
+                             variant="outline" 
+                             onClick={() => setExtendStep(1)}
+                             className="px-6"
+                           >
+                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                             </svg>
+                             Back
+                           </Button>
+                         )}
+                         <Button
+                           onClick={handleExtendBookingNext}
+                           className="bg-blue-600 hover:bg-blue-700 px-6"
+                           disabled={!newCheckoutDate}
+                         >
+                           Next: Review Payment
+                           <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                           </svg>
+                         </Button>
+                       </div>
                      </div>
                    </>
                  )}
 
-                 {extendStep === 2 && extensionCalculation && (
+                 {((extendStep === 2 && !isMultiRoomBooking) || (extendStep === 3 && isMultiRoomBooking)) && extensionCalculation && (
                    <>
                      {/* Payment Calculation Review */}
                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
@@ -1300,7 +1409,7 @@ function AdminBookingList() {
                      <div className="flex justify-between pt-4">
                        <Button 
                          variant="outline" 
-                         onClick={() => setExtendStep(1)}
+                         onClick={() => setExtendStep(isMultiRoomBooking ? 2 : 1)}
                          className="px-6"
                        >
                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1330,7 +1439,7 @@ function AdminBookingList() {
                    </>
                  )}
 
-                 {extendStep === 3 && extensionCalculation && (
+                 {((extendStep === 3 && !isMultiRoomBooking) || (extendStep === 4 && isMultiRoomBooking)) && extensionCalculation && (
                    <>
                      {/* Payment Processing */}
                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -1352,7 +1461,7 @@ function AdminBookingList() {
                              <div className="flex justify-between items-center">
                                <span className="font-medium text-gray-900 dark:text-white">Remaining Balance:</span>
                                <span className="font-bold text-lg text-purple-600 dark:text-purple-400">
-                                 ₱{(extensionCalculation.additionalAmount - paymentAmount).toLocaleString()}
+                                 ₱{(extensionCalculation.additionalAmount - (parseFloat(paymentAmount) || 0)).toLocaleString()}
                                </span>
                              </div>
                            </div>
@@ -1382,12 +1491,18 @@ function AdminBookingList() {
                              Payment Amount (₱)
                            </label>
                            <Input
-                             type="number"
-                             min="0"
-                             max={extensionCalculation.additionalAmount}
-                             step="0.01"
+                             type="text"
                              value={paymentAmount}
-                             onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
+                             onChange={(e) => {
+                               const value = e.target.value;
+                               // Allow only numbers and decimal point
+                               if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                 const numValue = parseFloat(value) || 0;
+                                 if (numValue <= extensionCalculation.additionalAmount) {
+                                   setPaymentAmount(value);
+                                 }
+                               }
+                             }}
                              placeholder="Enter payment amount"
                              className="w-full"
                            />
@@ -1401,11 +1516,11 @@ function AdminBookingList() {
                            <div className="grid grid-cols-2 gap-4 text-sm">
                              <div>
                                <span className="text-gray-600 dark:text-gray-400">Amount Paid:</span>
-                               <p className="font-medium text-green-600 dark:text-green-400">₱{paymentAmount.toLocaleString()}</p>
+                               <p className="font-medium text-green-600 dark:text-green-400">₱{(parseFloat(paymentAmount) || 0).toLocaleString()}</p>
                              </div>
                              <div>
                                <span className="text-gray-600 dark:text-gray-400">Added to Booking:</span>
-                               <p className="font-medium text-blue-600 dark:text-blue-400">₱{(extensionCalculation.additionalAmount - paymentAmount).toLocaleString()}</p>
+                               <p className="font-medium text-blue-600 dark:text-blue-400">₱{(extensionCalculation.additionalAmount - (parseFloat(paymentAmount) || 0)).toLocaleString()}</p>
                              </div>
                            </div>
                          </div>
@@ -1416,7 +1531,7 @@ function AdminBookingList() {
                      <div className="flex justify-between pt-4">
                        <Button 
                          variant="outline" 
-                         onClick={() => setExtendStep(2)}
+                         onClick={() => setExtendStep(isMultiRoomBooking ? 3 : 2)}
                          className="px-6"
                        >
                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
