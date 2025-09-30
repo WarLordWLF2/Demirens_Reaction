@@ -23,8 +23,8 @@ import AdminRoomtype from './pages/admin/Master_Files/RoomTypeMaster';
 import AdminNewBook from './pages/admin/WalkIn_Folder/AddWalkIn';
 import Landingpage from './pages/Landingpage';
 import Billings from './pages/admin/Billings';
-import Invoice from './pages/admin/Invoice';
 import CreateInvoice from './pages/admin/Invoice';
+import EmployeeManagement from './pages/admin/EmployeeManagement';
 
 // Online
 import OnlineReqList from './pages/admin/Online_Folder/OnlineReqList';
@@ -136,6 +136,7 @@ function App() {
                 <Route path="/admin/chargemaster" element={<AdminChargeMaster />} />
                 <Route path="/admin/discountmaster" element={<AdminDiscountMaster />} />
                 <Route path="/admin/roomtypemaster" element={<AdminRoomtype />} />
+                <Route path="/admin/employeemanagement" element={<EmployeeManagement />} />
 
                 <Route path="/admin/billings" element={<Billings />} />
                 <Route path="/admin/invoice" element={<CreateInvoice />} />

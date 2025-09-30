@@ -502,7 +502,7 @@ function AdminBookingList() {
       'Pending': { variant: 'secondary', className: 'bg-yellow-500 hover:bg-yellow-600' },
       'Approved': { variant: 'default', className: 'bg-green-500 hover:bg-green-600' },
       'Checked-In': { variant: 'default', className: 'bg-emerald-500 hover:bg-emerald-600' },
-      'Checked-Out': { variant: 'default', className: 'bg-blue-500 hover:bg-blue-600' },
+      'Checked-Out': { variant: 'default', className: 'bg-[#34699a] hover:bg-[#2a5580]' },
       'Cancelled': { variant: 'destructive', className: 'bg-red-500 hover:bg-red-600' }
     };
 
@@ -583,8 +583,8 @@ function AdminBookingList() {
           <Card className="bg-white dark:bg-gray-800 shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="p-2 bg-[#34699a]/10 dark:bg-[#34699a]/20 rounded-lg">
+                  <svg className="w-6 h-6 text-[#34699a] dark:text-[#34699a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
@@ -635,8 +635,8 @@ function AdminBookingList() {
           <Card className="bg-white dark:bg-gray-800 shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="p-2 bg-[#34699a]/10 dark:bg-[#34699a]/20 rounded-lg">
+                  <svg className="w-6 h-6 text-[#34699a] dark:text-[#34699a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
@@ -735,7 +735,7 @@ function AdminBookingList() {
           <CardContent>
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#34699a]"></div>
                 <span className="ml-3 text-gray-600 dark:text-gray-400">Loading bookings...</span>
               </div>
             ) : !Array.isArray(filteredBookings) || filteredBookings.length === 0 ? (
@@ -797,7 +797,7 @@ function AdminBookingList() {
                             <div className={`text-sm font-medium px-2 py-1 rounded-full ${
                               getRoomTypeDisplay(b) === 'More Rooms...' 
                                 ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300' 
-                                : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                                : 'bg-[#34699a]/10 dark:bg-[#34699a]/20 text-[#34699a] dark:text-[#34699a]'
                             }`}>
                               {getRoomTypeDisplay(b)}
                             </div>
@@ -853,7 +853,7 @@ function AdminBookingList() {
                                 variant="outline"
                                 onClick={() => handleChangeRoom(b)}
                                 disabled={b.booking_status === 'Pending'}
-                                className="text-xs h-7 px-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="text-xs h-7 px-3 text-[#34699a] hover:text-[#2a5580] hover:bg-[#34699a]/10 dark:hover:bg-[#34699a]/20 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <ArrowRightLeft className="w-3 h-3 mr-1" />
                                 Room
@@ -886,8 +886,8 @@ function AdminBookingList() {
             {selectedBooking && (
               <div className="space-y-6 mt-6">
                 {/* Status Banner */}
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 border border-blue-200 dark:border-blue-800">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-transparent rounded-bl-full"></div>
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#34699a]/10 to-[#34699a]/5 dark:from-[#34699a]/20 dark:to-[#34699a]/10 p-6 border border-[#34699a]/20 dark:border-[#34699a]/30">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#34699a]/20 to-transparent rounded-bl-full"></div>
                   <div className="relative flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-3 mb-2">
@@ -898,7 +898,7 @@ function AdminBookingList() {
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{selectedBooking.customer_email}</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      <div className="text-2xl font-bold text-[#34699a] dark:text-[#34699a]">
                         ₱{selectedBooking.total_amount?.toLocaleString() || '0'}
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">Total Amount</div>
@@ -967,7 +967,7 @@ function AdminBookingList() {
                                      <span className="font-semibold">
                                        {roomGroups[0]?.roomType || 'Standard Room'}
                                        {roomGroups[0]?.count > 1 && (
-                                         <span className="ml-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs font-medium">
+                                         <span className="ml-2 bg-[#34699a]/10 dark:bg-[#34699a]/20 text-[#34699a] dark:text-[#34699a] px-2 py-1 rounded text-xs font-medium">
                                            ×{roomGroups[0].count}
                                          </span>
                                        )}
@@ -1003,7 +1003,7 @@ function AdminBookingList() {
                                          <div className={group.count > 1 ? 'flex items-center gap-2' : ''}>
                                            <span className="font-semibold text-sm">{group.roomType}</span>
                                            {group.count > 1 && (
-                                             <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs font-medium">
+                                             <span className="bg-[#34699a]/10 dark:bg-[#34699a]/20 text-[#34699a] dark:text-[#34699a] px-2 py-1 rounded text-xs font-medium">
                                                ×{group.count}
                                              </span>
                                            )}
@@ -1064,7 +1064,7 @@ function AdminBookingList() {
                       setShowCustomerDetails(false);
                     }}
                     disabled={selectedBooking.booking_status === 'Pending'}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-[#34699a] hover:bg-[#2a5580] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ArrowRightLeft className="w-4 h-4 mr-2" />
                     Change Room
@@ -1157,11 +1157,11 @@ function AdminBookingList() {
                      Step {extendStep} of {isMultiRoomBooking ? 4 : 3}
                    </span>
                    <div className="flex gap-1">
-                     <div className={`w-2 h-2 rounded-full ${extendStep >= 1 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-                     <div className={`w-2 h-2 rounded-full ${extendStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-                     <div className={`w-2 h-2 rounded-full ${extendStep >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                     <div className={`w-2 h-2 rounded-full ${extendStep >= 1 ? 'bg-[#34699a]' : 'bg-gray-300'}`}></div>
+                     <div className={`w-2 h-2 rounded-full ${extendStep >= 2 ? 'bg-[#34699a]' : 'bg-gray-300'}`}></div>
+                     <div className={`w-2 h-2 rounded-full ${extendStep >= 3 ? 'bg-[#34699a]' : 'bg-gray-300'}`}></div>
                      {isMultiRoomBooking && (
-                       <div className={`w-2 h-2 rounded-full ${extendStep >= 4 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                       <div className={`w-2 h-2 rounded-full ${extendStep >= 4 ? 'bg-[#34699a]' : 'bg-gray-300'}`}></div>
                      )}
                    </div>
                  </div>
@@ -1171,8 +1171,8 @@ function AdminBookingList() {
              {selectedBooking && (
                <div className="space-y-6">
                  {/* Current Booking Info */}
-                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                   <h3 className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-3 flex items-center gap-2">
+                 <div className="bg-gradient-to-r from-[#34699a]/10 to-[#34699a]/5 dark:from-[#34699a]/20 dark:to-[#34699a]/10 p-4 rounded-lg border border-[#34699a]/20 dark:border-[#34699a]/30">
+                   <h3 className="text-sm font-medium text-[#34699a] dark:text-[#34699a] mb-3 flex items-center gap-2">
                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                      </svg>

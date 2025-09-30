@@ -98,11 +98,11 @@ function AdminDashboard() {
         <AdminHeader />
 
         <div className="p-4 space-y-6">
-          <h1 className="text-2xl font-semibold">Admin Name Here</h1>
+          <h1 className="text-2xl font-semibold text-[#34699a] dark:text-white">Admin Name Here</h1>
 
           {/* Bar Chart Section */}
           <section>
-            <label htmlFor="GraphGroup" className="block mb-2 font-medium">
+            <label htmlFor="GraphGroup" className="block mb-2 font-medium text-[#34699a] dark:text-white">
               Graphs
             </label>
             <div id="GraphGroup" className="w-full">
@@ -175,7 +175,7 @@ function AdminDashboard() {
 
           {/* Simple Reports Section */}
           <section>
-            <label htmlFor="CardGroup" className="block mb-2 font-medium">
+            <label htmlFor="CardGroup" className="block mb-2 font-medium text-[#34699a] dark:text-white">
               Simple Reports
             </label>
             <div id="CardGroup" className="flex flex-wrap gap-4">
@@ -183,7 +183,7 @@ function AdminDashboard() {
               <div className="w-full sm:w-[48%] lg:w-[calc(25%-1rem)]">
                 <Card className="min-h-[150px]">
                   <CardHeader>
-                    <CardTitle>Rooms</CardTitle>
+                    <CardTitle className="text-[#34699a] dark:text-white">Rooms</CardTitle>
                     <CardDescription>Card Description</CardDescription>
                     <CardAction>Card Action</CardAction>
                   </CardHeader>
@@ -196,7 +196,7 @@ function AdminDashboard() {
               <div className="w-full sm:w-[48%] lg:w-[calc(25%-1rem)]">
                 <Card className="min-h-[150px]">
                   <CardHeader>
-                    <CardTitle>Booking</CardTitle>
+                    <CardTitle className="text-[#34699a] dark:text-white">Booking</CardTitle>
                     <CardDescription>Card Description</CardDescription>
                     <CardAction>Card Action</CardAction>
                   </CardHeader>
@@ -209,7 +209,7 @@ function AdminDashboard() {
               <div className="w-full sm:w-[48%] lg:w-[calc(25%-1rem)]">
                 <Card className="min-h-[150px]">
                   <CardHeader>
-                    <CardTitle>Available Rooms</CardTitle>
+                    <CardTitle className="text-[#34699a] dark:text-white">Available Rooms</CardTitle>
                     <CardDescription>Card Description</CardDescription>
                     <CardAction>Card Action</CardAction>
                   </CardHeader>
@@ -222,7 +222,7 @@ function AdminDashboard() {
               <div className="w-full sm:w-[48%] lg:w-[calc(25%-1rem)]">
                 <Card className="min-h-[150px]">
                   <CardHeader>
-                    <CardTitle>Payments</CardTitle>
+                    <CardTitle className="text-[#34699a] dark:text-white">Payments</CardTitle>
                     <CardDescription>Card Description</CardDescription>
                     <CardAction>Card Action</CardAction>
                   </CardHeader>

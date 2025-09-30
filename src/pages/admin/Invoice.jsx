@@ -67,8 +67,8 @@ function CreateInvoice() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 bg-[#34699a]/10 dark:bg-[#34699a]/20 rounded-lg">
+                <FileText className="h-6 w-6 text-[#34699a] dark:text-[#34699a]" />
               </div>
               <div>
                 <CardTitle className="text-2xl font-bold">Invoice Management</CardTitle>
@@ -97,7 +97,7 @@ function CreateInvoice() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#34699a]"></div>
               <span>Processing invoice...</span>
             </div>
           </CardContent>
@@ -200,7 +200,7 @@ function CreateInvoice() {
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-600" />
+                <FileText className="h-5 w-5 text-[#34699a]" />
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Invoice Management - Booking #{selectedBooking?.booking_id}
                 </h2>
