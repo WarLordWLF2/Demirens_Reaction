@@ -5,6 +5,7 @@ import Sidebar from './Sidebar'
 import { Bell } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import axios from 'axios'
+import { toast } from 'sonner'
 
 function AdminHeader({ onCollapse, notificationRefreshTrigger = 0, resetNotificationsOnPage = false }) {
   const [pendingCount, setPendingCount] = useState(0)
@@ -12,6 +13,19 @@ function AdminHeader({ onCollapse, notificationRefreshTrigger = 0, resetNotifica
   const navigate = useNavigate()
 
   const APIConn = `${localStorage.url}admin.php`
+
+  // Security check - redirect if not admin
+  useEffect(() => {
+    const userId = localStorage.getItem('userId')
+    const userType = localStorage.getItem('userType')
+    const userLevel = localStorage.getItem('userLevel')
+
+    if (!userId || userType !== 'admin' || userLevel !== 'Admin') {
+      console.log('Unauthorized access detected in AdminHeader')
+      toast.error('Admin access required')
+      navigate('/login')
+    }
+  }, [navigate])
 
   const fetchPendingCount = useCallback(async () => {
     try {

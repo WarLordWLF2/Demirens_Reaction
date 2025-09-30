@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   MenuSquareIcon, Home, User, BedIcon, File, CreditCard, User2Icon, Calendar1Icon,
@@ -30,6 +30,19 @@ function Sidebar({ onCollapse }) {
   const [openBookings, setOpenBookings] = useState(false) // New state for bookings
   const [isOpen, setIsOpen] = useState(false)
   const navigate = useNavigate()
+
+  // Security check - redirect if not admin
+  useEffect(() => {
+    const userId = localStorage.getItem('userId')
+    const userType = localStorage.getItem('userType')
+    const userLevel = localStorage.getItem('userLevel')
+
+    if (!userId || userType !== 'admin' || userLevel !== 'Admin') {
+      console.log('Unauthorized access detected in Sidebar')
+      toast.error('Admin access required')
+      navigate('/login')
+    }
+  }, [navigate])
 
   // Logout function
   const handleLogout = async () => {
