@@ -13,7 +13,7 @@ Need to Add:
 - Upgrades to the UI to match
 
 
--3.1.1 (September 29, 2025)
+### 3.1.1 (September 29, 2025)
 ## `General`
 - Set the Check-in to be at 2PM and Check-out at 12PM
 - Added an Invoice page
