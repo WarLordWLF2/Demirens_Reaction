@@ -14,6 +14,7 @@ This project focuses on the admin side of the project. If you want to check the 
 ## `Booking List Page`
 - Remaining Balance is shown now
 - Disabled Extend and Change Rooms if Customer is Pending
+- Upgraded the Extended Stay in rooms to handle multiple rooms 
 
 ## `Add Amenities Page`
 - Fixed a Bug when Adding Amenities, now it confirms you successfully added a new amenity
