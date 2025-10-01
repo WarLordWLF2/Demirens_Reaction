@@ -135,6 +135,10 @@ function AdminBookingRoomSelection() {
     navigate('/admin/requestedamenities');
   };
 
+  const handleCancelSelection = () => {
+    setSelectedRoom(null);
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -230,26 +234,44 @@ function AdminBookingRoomSelection() {
         </Card>
       </div>
 
-      {/* Selected Room Details */}
+      {/* Selected Room Details with Confirmation */}
       {selectedRoom && (
-        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
-              <CheckCircle className="h-5 w-5" />
-              Selected Booking Room
-            </CardTitle>
+        <Card className="border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 shadow-lg">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-green-900 dark:text-green-100">
+                <CheckCircle className="h-5 w-5" />
+                Selected Booking Room
+              </CardTitle>
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={handleCancelSelection}
+                  className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  Cancel Selection
+                </Button>
+                <Button
+                  onClick={handleConfirmSelection}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <Package className="h-4 w-4 mr-2" />
+                  Confirm Selection & Add Amenities
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <User className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Customer</p>
                   <p className="font-medium text-gray-900 dark:text-white">{selectedRoom.customer_name}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Building className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <Building className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Room</p>
                   <p className="font-medium text-gray-900 dark:text-white">
@@ -258,7 +280,7 @@ function AdminBookingRoomSelection() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <Calendar className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Check-in</p>
                   <p className="font-medium text-gray-900 dark:text-white">
@@ -267,7 +289,7 @@ function AdminBookingRoomSelection() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <Package className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Reference</p>
                   <p className="font-medium text-gray-900 dark:text-white">{selectedRoom.reference_no}</p>
@@ -316,9 +338,9 @@ function AdminBookingRoomSelection() {
                   {filteredRooms.map((room) => (
                     <TableRow 
                       key={room.booking_room_id}
-                      className={`hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors ${
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-all duration-200 ${
                         selectedRoom?.booking_room_id === room.booking_room_id 
-                          ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' 
+                          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 shadow-sm' 
                           : ''
                       }`}
                       onClick={() => handleRoomSelect(room)}
@@ -327,11 +349,11 @@ function AdminBookingRoomSelection() {
                         <div className="flex items-center justify-center">
                           <div className={`w-4 h-4 rounded-full border-2 ${
                             selectedRoom?.booking_room_id === room.booking_room_id
-                              ? 'bg-blue-600 border-blue-600'
+                              ? 'bg-green-600 border-green-600'
                               : 'border-gray-300 dark:border-gray-600'
                           }`}>
                             {selectedRoom?.booking_room_id === room.booking_room_id && (
-                              <div className="w-full h-full rounded-full bg-blue-600"></div>
+                              <div className="w-full h-full rounded-full bg-green-600"></div>
                             )}
                           </div>
                         </div>
@@ -415,9 +437,20 @@ function AdminBookingRoomSelection() {
                             e.stopPropagation();
                             handleRoomSelect(room);
                           }}
-                          className="min-w-[100px]"
+                          className={`min-w-[100px] transition-all duration-200 ${
+                            selectedRoom?.booking_room_id === room.booking_room_id 
+                              ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg' 
+                              : 'hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                          }`}
                         >
-                          {selectedRoom?.booking_room_id === room.booking_room_id ? 'Selected' : 'Select'}
+                          {selectedRoom?.booking_room_id === room.booking_room_id ? (
+                            <>
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Selected
+                            </>
+                          ) : (
+                            'Select'
+                          )}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -429,24 +462,6 @@ function AdminBookingRoomSelection() {
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
-      {selectedRoom && (
-        <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <Button 
-            variant="outline" 
-            onClick={handleBackToAmenities}
-            className="min-w-[120px]"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmSelection}
-            className="bg-[#113f67] hover:bg-[#0d2a4a] dark:bg-blue-700 dark:hover:bg-blue-600 text-white min-w-[180px]"
-          >
-            Confirm Selection & Add Amenities
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

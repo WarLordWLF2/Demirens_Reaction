@@ -445,7 +445,18 @@ function DiscountMaster() {
                       <FormItem>
                         <FormLabel>Discount Percentage</FormLabel>
                         <FormControl>
-                          <Input type="number" step="0.01" placeholder="e.g. 15.50" {...field} />
+                          <Input 
+                            type="text" 
+                            placeholder="e.g. 15.50" 
+                            {...field}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Allow only numbers and decimal point
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                field.onChange(value);
+                              }
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -459,7 +470,18 @@ function DiscountMaster() {
                       <FormItem>
                         <FormLabel>Discount Amount (Fixed)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 500" {...field} />
+                          <Input 
+                            type="text" 
+                            placeholder="e.g. 500" 
+                            {...field}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Allow only numbers and decimal point
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                field.onChange(value);
+                              }
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -517,7 +539,17 @@ function DiscountMaster() {
                       <FormItem>
                         <FormLabel>Discount Percentage</FormLabel>
                         <FormControl>
-                          <Input type="number" step="0.01" {...field} />
+                          <Input 
+                            type="text" 
+                            {...field}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Allow only numbers and decimal point
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                field.onChange(value);
+                              }
+                            }}
+                          />
                         </FormControl>
                       </FormItem>
                     )}
@@ -532,7 +564,17 @@ function DiscountMaster() {
                       <FormItem>
                         <FormLabel>Discount Amount (Fixed)</FormLabel>
                         <FormControl>
-                          <Input type="number" {...field} />
+                          <Input 
+                            type="text" 
+                            {...field}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Allow only numbers and decimal point
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                field.onChange(value);
+                              }
+                            }}
+                          />
                         </FormControl>
                       </FormItem>
                     )}

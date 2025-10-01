@@ -17,14 +17,14 @@ function Sidebar() {
     <div>
       <Sheet>
         <SheetTrigger asChild>
-          <Button>
-            <MenuSquareIcon className="w-4 h-4 text-black" />
+          <Button className="bg-[#34699a] hover:bg-[#2a5580] text-white">
+            <MenuSquareIcon className="w-4 h-4" />
           </Button>
 
         </SheetTrigger>
         <SheetContent side="left">
           <SheetHeader>
-            <SheetTitle>DEMIREN HOTEL AND RESTAURANT</SheetTitle>
+            <SheetTitle className="text-[#34699a]">DEMIREN HOTEL AND RESTAURANT</SheetTitle>
             <SheetDescription>Hotel Management System</SheetDescription>
           </SheetHeader>
 
@@ -32,7 +32,7 @@ function Sidebar() {
             <div className="mt-2 space-y-5 pb-36">
               {/* Dashboard */}
               <Link to="/admin/dashboard" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
+                <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-[#34699a] hover:text-white">
                   <Home className="w-4 h-4" />
                   Dashboard
                 </Button>
@@ -40,7 +40,7 @@ function Sidebar() {
 
               {/* Profile */}
               <Link to="/admin/profile" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
+                <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-[#34699a] hover:text-white">
                   <User className="w-4 h-4" />
                   Profile
                 </Button>
@@ -48,7 +48,7 @@ function Sidebar() {
 
               {/* Rooms List */}
               <Link to="/admin/roomslist" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
+                <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-[#34699a] hover:text-white">
                   <BedIcon className="w-4 h-4" />
                   Rooms List
                 </Button>
@@ -57,7 +57,7 @@ function Sidebar() {
               {/* Bookings List */}
               <Collapsible open={openBookingList} onOpenChange={setOpenBookingList}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full gap-2">
-                  <Button variant="ghost" className="w-full flex items-center gap-2">
+                  <Button variant="ghost" className="w-full flex items-center gap-2 hover:bg-[#34699a] hover:text-white">
                     <File className="w-4 h-4" />
                     Booking
                     <ChevronDown className={`ml-auto transition-transform duration-200 transform ${openBookingList ? "rotate-180" : ""}`} />
@@ -74,7 +74,7 @@ function Sidebar() {
 
                     <li>
 
-                      <Link to="/admin/bookinglist" className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded block w-full">
+                      <Link to="/admin/bookinglist" className="px-2 py-1 hover:bg-[#34699a] hover:text-white dark:hover:bg-zinc-800 rounded block w-full">
                         <span className="flex items-center gap-2">
                           <BookCheckIcon className="w-4 h-4" />
                           Booking List
@@ -84,7 +84,7 @@ function Sidebar() {
 
                     <li>
 
-                      <Link to="/admin/newbook" className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded block w-full">
+                      <Link to="/admin/newbook" className="px-2 py-1 hover:bg-[#34699a] hover:text-white dark:hover:bg-zinc-800 rounded block w-full">
                         <span className="flex items-center gap-2">
                           <BookCheckIcon className="w-4 h-4" />
                           New Bookings
@@ -103,7 +103,7 @@ function Sidebar() {
 
               {/* Calendar */}
               <Link to="/admin/calendar" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
+                <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-[#34699a] hover:text-white">
                   <Calendar1Icon className="w-4 h-4" />
                   Calendar
                 </Button>
@@ -111,7 +111,7 @@ function Sidebar() {
 
               {/* Guest Profile */}
               <Link to="/admin/guestprofile" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
+                <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-[#34699a] hover:text-white">
                   <User className="w-4 h-4" />
                   Guest Profile
                 </Button>
@@ -119,7 +119,7 @@ function Sidebar() {
 
               {/* Payments */}
               <Link to="/admin/payments" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
+                <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-[#34699a] hover:text-white">
                   <BedIcon className="w-4 h-4" />
                   Payments
                 </Button>
@@ -127,7 +127,7 @@ function Sidebar() {
 
               {/* Requested Amenities */}
               <Link to="/admin/requestedamenities" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
+                <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-[#34699a] hover:text-white">
                   <PillBottleIcon className="w-4 h-4" />
                   Requested Amenities
                 </Button>
@@ -136,7 +136,7 @@ function Sidebar() {
 
               {/* Reviews */}
               <Link to="/admin/reviews" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
+                <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-[#34699a] hover:text-white">
                   <StarIcon className="w-4 h-4" />
                   Reviews
                 </Button>
@@ -144,7 +144,7 @@ function Sidebar() {
 
               {/* Transaction History */}
               <Link to="/admin/transactionhistory" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
+                <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-[#34699a] hover:text-white">
                   <HistoryIcon className="w-4 h-4" />
                   Transaction History
                 </Button>
@@ -152,7 +152,7 @@ function Sidebar() {
 
               {/* Visitors Log*/}
               <Link to="/admin/visitorslog" className="block w-full">
-                <Button variant="ghost" className="w-full justify-start gap-2">
+                <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-[#34699a] hover:text-white">
                   <User2Icon className="w-4 h-4" />
                   Visitors Log
                 </Button>
@@ -161,7 +161,7 @@ function Sidebar() {
               {/* Master Files */}
               <Collapsible open={openMasters} onOpenChange={setOpenMasters}>
                 <CollapsibleTrigger className="flex items-center justify-between w-full gap-2">
-                  <Button variant="ghost" className="w-full flex items-center gap-2">
+                  <Button variant="ghost" className="w-full flex items-center gap-2 hover:bg-[#34699a] hover:text-white">
                     <File className="w-4 h-4" />
                     Master Files
                     <ChevronDown className={`ml-auto transition-transform duration-200 transform ${openMasters  ? "rotate-180" : ""}`} />
@@ -176,7 +176,7 @@ function Sidebar() {
                   <ul className="flex flex-col gap-2 mt-2">
 
                     <li>
-                      <Link to="/admin/amenitymaster" className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded block w-full">
+                      <Link to="/admin/amenitymaster" className="px-2 py-1 hover:bg-[#34699a] hover:text-white dark:hover:bg-zinc-800 rounded block w-full">
                         <span className="flex items-center gap-2">
                           <PillBottleIcon className="w-4 h-4" />
                           Amenities Masters
@@ -186,7 +186,7 @@ function Sidebar() {
 
 
                     <li>
-                      <Link to="/admin/chargescategory" className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded block w-full">
+                      <Link to="/admin/chargescategory" className="px-2 py-1 hover:bg-[#34699a] hover:text-white dark:hover:bg-zinc-800 rounded block w-full">
                         <span className="flex items-center gap-2">
                           <PlusSquareIcon className="w-4 h-4" />
                           Charges Category
@@ -195,7 +195,7 @@ function Sidebar() {
                     </li>
 
                     <li>
-                      <Link to="/admin/chargemaster" className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded block w-full">
+                      <Link to="/admin/chargemaster" className="px-2 py-1 hover:bg-[#34699a] hover:text-white dark:hover:bg-zinc-800 rounded block w-full">
                         <span className="flex items-center gap-2">
                           <MinusCircleIcon className="w-4 h-4" />
                           Charges Masters
@@ -205,7 +205,7 @@ function Sidebar() {
 
 
                     <li>
-                      <Link to="/admin/discountmaster" className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded block w-full">
+                      <Link to="/admin/discountmaster" className="px-2 py-1 hover:bg-[#34699a] hover:text-white dark:hover:bg-zinc-800 rounded block w-full">
                         <span className="flex items-center gap-2">
                           <MinusCircleIcon className="w-4 h-4" />
                           Discount Masters
@@ -215,7 +215,7 @@ function Sidebar() {
 
 
                     <li>
-                      <Link to="/admin/roomtypemaster" className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded block w-full">
+                      <Link to="/admin/roomtypemaster" className="px-2 py-1 hover:bg-[#34699a] hover:text-white dark:hover:bg-zinc-800 rounded block w-full">
                         <span className="flex items-center gap-2">
                           <Bed className="w-4 h-4" />
                           Room Type Masters

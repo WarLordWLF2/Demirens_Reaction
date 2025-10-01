@@ -496,7 +496,18 @@ function ChargeMaster() {
                       <FormItem>
                         <FormLabel>Price</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 100" {...field} />
+                          <Input 
+                            type="text" 
+                            placeholder="e.g. 100" 
+                            {...field}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Allow only numbers and decimal point
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                field.onChange(value);
+                              }
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -580,7 +591,17 @@ function ChargeMaster() {
                       <FormItem>
                         <FormLabel>Price</FormLabel>
                         <FormControl>
-                          <Input type="number" {...field} />
+                          <Input 
+                            type="text" 
+                            {...field}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Allow only numbers and decimal point
+                              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                field.onChange(value);
+                              }
+                            }}
+                          />
                         </FormControl>
                       </FormItem>
                     )}

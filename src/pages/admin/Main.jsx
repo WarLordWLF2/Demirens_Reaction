@@ -17,6 +17,7 @@ import AdminChargesCategory from './Master_Files/ChargesCategory'
 import AdminChargeMaster from './Master_Files/ChargeMaster'
 import AdminDiscountMaster from './Master_Files/DiscountMaster'
 import AdminRoomtype from './Master_Files/RoomTypeMaster'
+import EmployeeManagement from './EmployeeManagement'
 
 export const AdminMain = () => {
 
@@ -29,6 +30,7 @@ export const AdminMain = () => {
   const adminViews = [
     <AdminDashboard />,
     <AdminProfile />,
+    <EmployeeManagement />,
     <AdminRoomsList />,
     <AdminCalendar />,
     <AdminGuestProfile />,

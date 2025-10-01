@@ -3,6 +3,7 @@ import './App.css';
 
 
 // ------------------------------------------------------------ Admin Side Here ------------------------------------------------------------
+import AdminRouteGuard from './pages/admin/components/AdminRouteGuard';
 import AdminRoomsList from './pages/admin/RoomsList';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminProfile from './pages/admin/Profile';
@@ -23,7 +24,8 @@ import AdminRoomtype from './pages/admin/Master_Files/RoomTypeMaster';
 import AdminNewBook from './pages/admin/WalkIn_Folder/AddWalkIn';
 import Landingpage from './pages/Landingpage';
 import Billings from './pages/admin/Billings';
-import Invoice from './pages/admin/Invoice';
+import CreateInvoice from './pages/admin/Invoice';
+import EmployeeManagement from './pages/admin/EmployeeManagement';
 
 // Online
 import OnlineReqList from './pages/admin/Online_Folder/OnlineReqList';
@@ -44,7 +46,7 @@ import { WalkInProvider } from './pages/admin/WalkIn_Folder/WalkInContext';
 // Authentication
 import Login from './pages/UserAuth_Folder/Login';
 import Register from './pages/UserAuth_Folder/Register';
-import OTP_Auth from './pages/UserAuth_Folder/OTP_Auth';
+import OTPAuth from './pages/UserAuth_Folder/OTP_Auth';
 import ForgotPassword from './pages/UserAuth_Folder/ForgotPassword';
 import ResetPassword from './pages/UserAuth_Folder/ResetPassword';
 
@@ -110,45 +112,160 @@ function App() {
                 {/* Auth Pages */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/verify" element={<OTP_Auth />} />
+                <Route path="/verify" element={<OTPAuth />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
 
-                {/* Admin Pages */}
+                {/* Landing Page */}
                 <Route path="/" element={<Landingpage />} />
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/profile" element={<AdminProfile />} />
-                <Route path="/admin/roomslist" element={<AdminRoomsList />} />
-                <Route path="/admin/bookinglist" element={<AdminBookingList />} />
-                <Route path="/admin/newbook" element={<AdminNewBook />} />
-                <Route path="/admin/calendar" element={<AdminCalendar />} />
-                <Route path="/admin/guestprofile" element={<AdminGuestProfile />} />
-                <Route path="/admin/payments" element={<AdminPayments />} />
-                <Route path="/admin/requestedamenities" element={<AdminRequestedAmenities />} />
-                <Route path="/admin/bookingroomselection" element={<AdminBookingRoomSelection />} />
-                <Route path="/admin/reviews" element={<AdminReviews />} />
-                <Route path="/admin/transactionhistory" element={<AdminTransactionHis />} />
-                <Route path="/admin/visitorslog" element={<AdminVisitorsLog />} />
 
-                <Route path="/admin/amenitymaster" element={<AdminAmenityMaster />} />
-                <Route path="/admin/chargescategory" element={<AdminChargesCategory />} />
-                <Route path="/admin/chargemaster" element={<AdminChargeMaster />} />
-                <Route path="/admin/discountmaster" element={<AdminDiscountMaster />} />
-                <Route path="/admin/roomtypemaster" element={<AdminRoomtype />} />
+                {/* Protected Admin Pages */}
+                <Route path="/admin/dashboard" element={
+                  <AdminRouteGuard>
+                    <AdminDashboard />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/profile" element={
+                  <AdminRouteGuard>
+                    <AdminProfile />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/roomslist" element={
+                  <AdminRouteGuard>
+                    <AdminRoomsList />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/bookinglist" element={
+                  <AdminRouteGuard>
+                    <AdminBookingList />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/newbook" element={
+                  <AdminRouteGuard>
+                    <AdminNewBook />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/calendar" element={
+                  <AdminRouteGuard>
+                    <AdminCalendar />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/guestprofile" element={
+                  <AdminRouteGuard>
+                    <AdminGuestProfile />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/payments" element={
+                  <AdminRouteGuard>
+                    <AdminPayments />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/requestedamenities" element={
+                  <AdminRouteGuard>
+                    <AdminRequestedAmenities />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/bookingroomselection" element={
+                  <AdminRouteGuard>
+                    <AdminBookingRoomSelection />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/reviews" element={
+                  <AdminRouteGuard>
+                    <AdminReviews />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/transactionhistory" element={
+                  <AdminRouteGuard>
+                    <AdminTransactionHis />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/visitorslog" element={
+                  <AdminRouteGuard>
+                    <AdminVisitorsLog />
+                  </AdminRouteGuard>
+                } />
 
-                <Route path="/admin/billings" element={<Billings />} />
-                <Route path="/admin/invoice" element={<Invoice />} />
+                <Route path="/admin/amenitymaster" element={
+                  <AdminRouteGuard>
+                    <AdminAmenityMaster />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/chargescategory" element={
+                  <AdminRouteGuard>
+                    <AdminChargesCategory />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/chargemaster" element={
+                  <AdminRouteGuard>
+                    <AdminChargeMaster />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/discountmaster" element={
+                  <AdminRouteGuard>
+                    <AdminDiscountMaster />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/roomtypemaster" element={
+                  <AdminRouteGuard>
+                    <AdminRoomtype />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/employeemanagement" element={
+                  <AdminRouteGuard>
+                    <EmployeeManagement />
+                  </AdminRouteGuard>
+                } />
 
-                {/* Online Pages */}
-                <Route path="/admin/online" element={<OnlineReqList />} />
-                <Route path="/admin/approve/:bookingId" element={<ApproveRooms />} />
-                <Route path="/admin/receipt/:bookingId" element={<ApprovalReceipt />} />
+                <Route path="/admin/billings" element={
+                  <AdminRouteGuard>
+                    <Billings />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/invoice" element={
+                  <AdminRouteGuard>
+                    <CreateInvoice />
+                  </AdminRouteGuard>
+                } />
 
-                {/* WalkIn Pages */}
-                <Route path="/admin/add-walk-in" element={<AddWalkIn />} />
-                <Route path="/admin/choose-rooms" element={<ChooseRooms />} />
-                <Route path="/admin/payment-method" element={<PaymentMethod />} />
-                <Route path="/admin/confirmation" element={<Confirmation />} />
+                {/* Protected Online Pages */}
+                <Route path="/admin/online" element={
+                  <AdminRouteGuard>
+                    <OnlineReqList />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/approve/:bookingId" element={
+                  <AdminRouteGuard>
+                    <ApproveRooms />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/receipt/:bookingId" element={
+                  <AdminRouteGuard>
+                    <ApprovalReceipt />
+                  </AdminRouteGuard>
+                } />
+
+                {/* Protected WalkIn Pages */}
+                <Route path="/admin/add-walk-in" element={
+                  <AdminRouteGuard>
+                    <AddWalkIn />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/choose-rooms" element={
+                  <AdminRouteGuard>
+                    <ChooseRooms />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/payment-method" element={
+                  <AdminRouteGuard>
+                    <PaymentMethod />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/confirmation" element={
+                  <AdminRouteGuard>
+                    <Confirmation />
+                  </AdminRouteGuard>
+                } />
 
                 {/* Frontdesk */}
                 {/* <Route path="/frontdesk/login" element={<FrontdeskLogin />} />

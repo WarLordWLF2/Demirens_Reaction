@@ -15,7 +15,7 @@ function AdminHeader() {
         {/* Header */}
         <div className="flex justify-end items-center">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-bold">DEMIREN HOTEL AND RESTAURANT</h1>
+            <h1 className="text-lg font-bold text-[#34699a] dark:text-white">DEMIREN HOTEL AND RESTAURANT</h1>
             <ThemeToggle />
           </div>
         </div>

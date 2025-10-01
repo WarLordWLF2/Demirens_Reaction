@@ -5,6 +5,7 @@ import Sidebar from './Sidebar'
 import { Bell } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import axios from 'axios'
+import { toast } from 'sonner'
 
 function AdminHeader({ onCollapse, notificationRefreshTrigger = 0, resetNotificationsOnPage = false }) {
   const [pendingCount, setPendingCount] = useState(0)
@@ -12,6 +13,19 @@ function AdminHeader({ onCollapse, notificationRefreshTrigger = 0, resetNotifica
   const navigate = useNavigate()
 
   const APIConn = `${localStorage.url}admin.php`
+
+  // Security check - redirect if not admin
+  useEffect(() => {
+    const userId = localStorage.getItem('userId')
+    const userType = localStorage.getItem('userType')
+    const userLevel = localStorage.getItem('userLevel')
+
+    if (!userId || userType !== 'admin' || userLevel !== 'Admin') {
+      console.log('Unauthorized access detected in AdminHeader')
+      toast.error('Admin access required')
+      navigate('/login')
+    }
+  }, [navigate])
 
   const fetchPendingCount = useCallback(async () => {
     try {
@@ -88,7 +102,7 @@ function AdminHeader({ onCollapse, notificationRefreshTrigger = 0, resetNotifica
         {/* Header */}
         <div className="flex justify-end items-center">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-bold text-gray-800 dark:text-white">
+            <h1 className="text-lg font-bold text-[#34699a] dark:text-white">
               DEMIREN HOTEL AND RESTAURANT
             </h1>
 
@@ -99,7 +113,7 @@ function AdminHeader({ onCollapse, notificationRefreshTrigger = 0, resetNotifica
                 className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 cursor-pointer"
                 title="Pending Amenity Requests - Click to view"
               >
-                <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <Bell className="w-5 h-5 text-[#34699a] dark:text-gray-300" />
                 
                 {/* Notification badge - positioned absolutely */}
                 {pendingCount > 0 && (

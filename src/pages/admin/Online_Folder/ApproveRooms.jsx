@@ -173,7 +173,20 @@ export default function ApproveRooms() {
       alert(`Please select exactly ${maxSelect} room(s).`);
       return;
     }
-    setState((prev) => ({ ...prev, selectedRooms: selected, checkIn, checkOut }));
+    
+    // Set fixed times: 2:00 PM check-in, 12:00 PM check-out
+    const checkInDateTime = new Date(checkIn);
+    checkInDateTime.setHours(14, 0, 0, 0); // 2:00 PM
+    
+    const checkOutDateTime = new Date(checkOut);
+    checkOutDateTime.setHours(12, 0, 0, 0); // 12:00 PM
+    
+    setState((prev) => ({ 
+      ...prev, 
+      selectedRooms: selected, 
+      checkIn: checkInDateTime.toISOString().slice(0, 19).replace('T', ' '),
+      checkOut: checkOutDateTime.toISOString().slice(0, 19).replace('T', ' ')
+    }));
     navigate(`/admin/receipt/${bookingId}`);
   };
 

@@ -22,9 +22,23 @@ const ChooseRooms = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Booking details state
-  const [checkIn, setCheckIn] = useState(walkInData.checkIn || '');
-  const [checkOut, setCheckOut] = useState(walkInData.checkOut || '');
+  // Booking details state - extract date part from datetime strings
+  const [checkIn, setCheckIn] = useState(() => {
+    if (!walkInData.checkIn) return '';
+    // If it's a datetime string, extract just the date part
+    if (walkInData.checkIn.includes(' ')) {
+      return walkInData.checkIn.split(' ')[0];
+    }
+    return walkInData.checkIn;
+  });
+  const [checkOut, setCheckOut] = useState(() => {
+    if (!walkInData.checkOut) return '';
+    // If it's a datetime string, extract just the date part
+    if (walkInData.checkOut.includes(' ')) {
+      return walkInData.checkOut.split(' ')[0];
+    }
+    return walkInData.checkOut;
+  });
   const [adult, setAdult] = useState(walkInData.adult || 1);
   const [children, setChildren] = useState(walkInData.children || 0);
 
@@ -35,13 +49,36 @@ const ChooseRooms = () => {
   const [floor, setFloor] = useState('');
 
   // Availability helpers
-  const parseDate = (str) => (str ? new Date(str + 'T00:00:00') : null);
+  const parseDate = (str) => {
+    if (!str) return null;
+    try {
+      // Handle both date strings and datetime strings
+      const dateStr = str.includes(' ') ? str.split(' ')[0] : str;
+      const date = new Date(dateStr + 'T00:00:00');
+      if (isNaN(date.getTime())) return null;
+      return date;
+    } catch (error) {
+      console.error('Date parsing error:', error);
+      return null;
+    }
+  };
   const addDays = (date, days) => {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
     return d;
   };
-  const fmt = (date) => (date ? date.toISOString().slice(0, 10) : '');
+  const fmt = (date) => {
+    if (!date) return '';
+    try {
+      // Handle both Date objects and date strings
+      const dateObj = date instanceof Date ? date : new Date(date);
+      if (isNaN(dateObj.getTime())) return '';
+      return dateObj.toISOString().slice(0, 10);
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return '';
+    }
+  };
   const tomorrow = fmt(addDays(new Date(), 1));
   const rangesOverlap = (startA, endA, startB, endB) => {
     // Treat as half-open interval [start, end)
@@ -160,10 +197,38 @@ const ChooseRooms = () => {
       return;
     }
 
+    // Set fixed times: 2:00 PM check-in, 12:00 PM check-out
+    const checkInDateTime = new Date(checkIn);
+    checkInDateTime.setHours(14, 0, 0, 0); // 2:00 PM
+    
+    const checkOutDateTime = new Date(checkOut);
+    checkOutDateTime.setHours(12, 0, 0, 0); // 12:00 PM
+
+    // Format dates manually to avoid timezone issues
+    const formatDateTime = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    };
+
+    const formattedCheckIn = formatDateTime(checkInDateTime);
+    const formattedCheckOut = formatDateTime(checkOutDateTime);
+
+    console.log('ChooseRooms - Setting times:', {
+      originalCheckIn: checkIn,
+      originalCheckOut: checkOut,
+      formattedCheckIn,
+      formattedCheckOut
+    });
+
     setWalkInData({
       ...walkInData,
-      checkIn,
-      checkOut,
+      checkIn: formattedCheckIn,
+      checkOut: formattedCheckOut,
       adult,
       children,
       selectedRooms,

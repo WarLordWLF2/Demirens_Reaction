@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   MenuSquareIcon, Home, User, BedIcon, File, CreditCard, User2Icon, Calendar1Icon,
@@ -19,7 +19,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import axios from 'axios'
+import { toast } from 'sonner'
 
 function Sidebar({ onCollapse }) {
   const [searchTerm, setSearchTerm] = useState("")
@@ -27,10 +29,66 @@ function Sidebar({ onCollapse }) {
   const [openPayments, setOpenPayments] = useState(false)
   const [openBookings, setOpenBookings] = useState(false) // New state for bookings
   const [isOpen, setIsOpen] = useState(false)
+  const navigate = useNavigate()
+
+  // Security check - redirect if not admin
+  useEffect(() => {
+    const userId = localStorage.getItem('userId')
+    const userType = localStorage.getItem('userType')
+    const userLevel = localStorage.getItem('userLevel')
+
+    if (!userId || userType !== 'admin' || userLevel !== 'Admin') {
+      console.log('Unauthorized access detected in Sidebar')
+      toast.error('Admin access required')
+      navigate('/login')
+    }
+  }, [navigate])
+
+  // Logout function
+  const handleLogout = async () => {
+    try {
+      const userId = localStorage.getItem('userId')
+      const userType = localStorage.getItem('userType')
+      
+      if (!userId || userType !== 'admin') {
+        toast.error('Admin access required')
+        return
+      }
+
+      const APIConn = localStorage.getItem('url') + "admin.php"
+      const formData = new FormData()
+      formData.append('method', 'logout')
+      formData.append('json', JSON.stringify({ 
+        employee_id: userId, 
+        user_type: userType 
+      }))
+
+      const response = await axios.post(APIConn, formData)
+      console.log('Logout Response:', response.data)
+
+      if (response.data.success) {
+        // Clear localStorage
+        localStorage.removeItem('userId')
+        localStorage.removeItem('fname')
+        localStorage.removeItem('lname')
+        localStorage.removeItem('userType')
+        localStorage.removeItem('userLevel')
+        
+        toast.success('Successfully logged out')
+        navigate('/')
+      } else {
+        toast.error(response.data.message || 'Logout failed')
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+      toast.error('Error during logout')
+    }
+  }
 
   const mainLinks = [
     { path: "/admin/dashboard", icon: <Home className="w-4 h-4" />, label: "Dashboard" },
     { path: "/admin/profile", icon: <User className="w-4 h-4" />, label: "Profile" },
+    { path: "/admin/employeemanagement", icon: <User className="w-4 h-4" />, label: "Employee Management" },
     { path: "/admin/roomslist", icon: <BedIcon className="w-4 h-4" />, label: "Rooms List" },
     { path: "/admin/bookinglist", icon: <File className="w-4 h-4" />, label: "Bookings List" },
     { path: "/admin/guestprofile", icon: <User className="w-4 h-4" />, label: "Guest Profiles" },
@@ -185,7 +243,7 @@ function Sidebar({ onCollapse }) {
           </ScrollArea>
 
           <div className="absolute bottom-4 left-4 right-4 border-t pt-4 bg-background">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleLogout}>
               <LogOutIcon className="w-4 h-4 mr-2" />
               Logout
             </Button>
