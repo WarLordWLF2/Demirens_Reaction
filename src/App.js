@@ -73,8 +73,8 @@ import BookingDisplayInvoiceSample from './pages/frontdesk/BookingDisplayInvoice
 function App() {
 
   useEffect(() => {
-    if (localStorage.getItem("url") !== "http://localhost/demirenAdminProject/api/") {
-      localStorage.setItem("url", "http://localhost/demirenAdminProject/api/");
+    if (localStorage.getItem("url") !== "http://localhost/demirenAPI/api/") {
+      localStorage.setItem("url", "http://localhost/demirenAPI/api/");
     }
 
     // localStorage.setItem("userId", 2);
