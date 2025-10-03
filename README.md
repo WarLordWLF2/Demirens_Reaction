@@ -4,11 +4,18 @@ This project focuses on the admin side of the project. If you want to check the 
 
 ### Update Logs
 ### 3.1.5 (September 30, 2025)
-## `Invoice Page`
-- Admin can now log in the same login page
+## `Employee Management Page`
+- For now, can add employee either Admin or Employee
 - Added a new page `EmployeeManagement.jsx`
+
+## `Invoice Page`
 - Added the new page structure in `Invoice.jsx`
 - Changed some UI
+
+## `Security`
+- Admin can now log in the same login page
+- Required to login in as Admin to access Admin features/pages
+- Status can update when logging in or out
 
 Need to Add:
 - Further debugging for testing

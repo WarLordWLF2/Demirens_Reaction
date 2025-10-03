@@ -185,7 +185,11 @@ function AdminDashboard() {
       <div>
         <AdminHeader />
 
+<<<<<<< HEAD
         <div className="ml-0 lg:ml-72 p-4 space-y-6 text-gray-900 dark:text-white">
+=======
+        <div className="p-4 space-y-6 text-gray-900 dark:text-white">
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Admin Name Here</h1>
 
           {/* Bar Chart Section */}
@@ -236,7 +240,11 @@ function AdminDashboard() {
                             return (
                               <div className="p-2 rounded-md shadow-lg border text-sm bg-background text-foreground">
                                 <p className="font-medium">{payload[0].payload.month}</p>
+<<<<<<< HEAD
                                 <p>Sales: {NumberFormatter.formatCurrency(payload[0].payload.sales)}</p>
+=======
+                                <p>Sales: ₱{payload[0].payload.sales}</p>
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
                                 <p className="text-xs text-muted-foreground">Click to view details</p>
                               </div>
                             );
@@ -250,7 +258,10 @@ function AdminDashboard() {
                         radius={8}
                         onClick={handleBarClick}
                         style={{ cursor: 'pointer' }}
+<<<<<<< HEAD
                         className="fill-blue-500 dark:fill-blue-400"
+=======
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
                       />
                     </BarChart>
 
@@ -296,6 +307,7 @@ function AdminDashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
+<<<<<<< HEAD
                       <div className="text-center">
                         <div className="text-4xl font-bold text-blue-900 dark:text-blue-100 mb-2">
                           {NumberFormatter.formatCount(activeBookings.active_bookings_count || 0)}
@@ -304,6 +316,16 @@ function AdminDashboard() {
                           Active Bookings
                         </div>
                       </div>
+=======
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-blue-900 dark:text-blue-100 mb-2">
+                        {activeBookings.active_bookings_count || 0}
+                      </div>
+                      <div className="text-sm text-blue-600 dark:text-blue-400">
+                        Active Bookings
+                      </div>
+                    </div>
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
                   </CardContent>
                 </Card>
               </div>
@@ -326,6 +348,7 @@ function AdminDashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
+<<<<<<< HEAD
                       <div className="text-center">
                         <div className="text-4xl font-bold text-green-900 dark:text-green-100 mb-2">
                           {NumberFormatter.formatCount(availableRooms.total_available_rooms || 0)}
@@ -334,6 +357,16 @@ function AdminDashboard() {
                           Available Rooms
                         </div>
                       </div>
+=======
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-green-900 dark:text-green-100 mb-2">
+                        {availableRooms.total_available_rooms || 0}
+                      </div>
+                      <div className="text-sm text-green-600 dark:text-green-400">
+                        Available Rooms
+                      </div>
+                    </div>
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
                   </CardContent>
                 </Card>
               </div>
@@ -377,7 +410,11 @@ function AdminDashboard() {
                               <span className="text-sm font-medium">Invoice Date</span>
                             </div>
                             <p className="text-sm text-muted-foreground">
+<<<<<<< HEAD
                               {DateFormatter.formatDateOnly(booking.invoice_date)}
+=======
+                              {new Date(booking.invoice_date).toLocaleDateString()}
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
                             </p>
                             
                             <div className="flex items-center gap-2">
@@ -400,19 +437,31 @@ function AdminDashboard() {
                               <DollarSign className="h-4 w-4" />
                               <span className="text-sm font-medium">Room Price</span>
                             </div>
+<<<<<<< HEAD
                             <p className="text-sm font-bold text-green-600">{NumberFormatter.formatCurrency(booking.roomtype_price)}</p>
+=======
+                            <p className="text-sm font-bold text-green-600">₱{booking.roomtype_price}</p>
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
                             
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-4 w-4" />
                               <span className="text-sm font-medium">Billing Amount</span>
                             </div>
+<<<<<<< HEAD
                             <p className="text-sm font-bold text-blue-600">{NumberFormatter.formatCurrency(booking.billing_total_amount)}</p>
+=======
+                            <p className="text-sm font-bold text-blue-600">₱{booking.billing_total_amount}</p>
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
                             
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-4 w-4" />
                               <span className="text-sm font-medium">Invoice Amount</span>
                             </div>
+<<<<<<< HEAD
                             <p className="text-sm font-bold text-purple-600">{NumberFormatter.formatCurrency(booking.invoice_total_amount)}</p>
+=======
+                            <p className="text-sm font-bold text-purple-600">₱{booking.invoice_total_amount}</p>
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
                           </div>
                         </div>
                       </Card>

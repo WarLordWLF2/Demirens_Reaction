@@ -2,8 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 import { toast } from 'sonner'
 import { Search, Grid, List, SlidersHorizontal, Edit, X, ChevronLeft, ChevronRight, ArrowLeft, Calendar } from 'lucide-react'
+<<<<<<< HEAD
 import { NumberFormatter } from './Function_Files/NumberFormatter'
 import { DateFormatter } from './Function_Files/DateFormatter'
+=======
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
 
 // Card Components
 import {
@@ -994,7 +997,11 @@ function AdminRoomsList() {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <label className="text-sm font-medium text-purple-700 dark:text-purple-300">
+<<<<<<< HEAD
                         From:
+=======
+                        Check-in:
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
                       </label>
                       <input
                         type="date"
@@ -1005,7 +1012,11 @@ function AdminRoomsList() {
                     </div>
                     <div className="flex items-center gap-2">
                       <label className="text-sm font-medium text-purple-700 dark:text-purple-300">
+<<<<<<< HEAD
                         To:
+=======
+                        Check-out:
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
                       </label>
                       <input
                         type="date"
@@ -1219,7 +1230,11 @@ function AdminRoomsList() {
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-green-600 dark:text-green-400">
+<<<<<<< HEAD
                             {NumberFormatter.formatCurrency(roomType.price)}
+=======
+                            ₱{Number(roomType.price).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
                           </span>
                           <p className="text-xs text-muted-foreground">
                             {roomType.capacity} {roomType.capacity > 1 ? 'persons' : 'person'} • {roomType.beds} bed{roomType.beds > 1 ? 's' : ''}

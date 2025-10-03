@@ -36,7 +36,11 @@ function AdminModal({ isVisible, onClose, modalTitle, children }) {
           <CardHeader>
             <CardTitle>{modalTitle}</CardTitle>
           </CardHeader>
+<<<<<<< HEAD
           <CardContent>
+=======
+          <CardContent className="grid text-base text-gray-900 dark:text-white">
+>>>>>>> 50d9e92e52d03d16976d2d156c6c3286bdde797c
             <div>{children}</div>
           </CardContent>
         </Card>
