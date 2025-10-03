@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import AdminHeader from './components/AdminHeader'
 import axios from 'axios'
 import { toast } from 'sonner'
+import { DateFormatter } from './Function_Files/DateFormatter';
 
 // Shad CN
 import {
@@ -166,7 +167,7 @@ function AdminProfile() {
     return (
       <div>
         <AdminHeader />
-        <main id="MainPage" className="p-4 space-y-6">
+        <main id="MainPage" className="ml-72 p-4 space-y-6">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#34699a]"></div>
           </div>
@@ -179,7 +180,7 @@ function AdminProfile() {
     return (
       <div>
         <AdminHeader />
-        <main id="MainPage" className="p-4 space-y-6">
+        <main id="MainPage" className="ml-72 p-4 space-y-6">
           <div className="text-center">
             <p className="text-red-500">Failed to load admin data</p>
             <Button onClick={fetchAdminData} className="mt-4">
@@ -196,7 +197,7 @@ function AdminProfile() {
       <div>
         <AdminHeader />
 
-        <main id="MainPage" className="p-4 space-y-6">
+        <main id="MainPage" className="ml-72 p-4 space-y-6">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-semibold text-[#34699a] dark:text-white">Admin Profile</h1>
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
@@ -443,10 +444,10 @@ function AdminProfile() {
                   <p>✔️ Username: {adminData.employee_username}</p>
                   <p>✔️ Phone: {adminData.employee_phone}</p>
                   <p>✔️ Address: {adminData.employee_address}</p>
-                  <p>✔️ Birthdate: {new Date(adminData.employee_birthdate).toLocaleDateString()}</p>
+                  <p>✔️ Birthdate: {DateFormatter.formatDateOnly(adminData.employee_birthdate)}</p>
                   <p>✔️ Gender: {adminData.employee_gender}</p>
-                  <p>✔️ Account Created: {new Date(adminData.employee_created_at).toLocaleDateString()}</p>
-                  <p>✔️ Last Updated: {new Date(adminData.employee_updated_at).toLocaleDateString()}</p>
+                  <p>✔️ Account Created: {DateFormatter.formatDateOnly(adminData.employee_created_at)}</p>
+                  <p>✔️ Last Updated: {DateFormatter.formatDateOnly(adminData.employee_updated_at)}</p>
                 </CardContent>
                 <CardFooter>
                   <p className="text-sm text-muted-foreground">Review admin access logs in the system tab.</p>

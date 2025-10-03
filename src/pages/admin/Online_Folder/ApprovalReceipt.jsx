@@ -6,8 +6,9 @@ import AdminHeader from "../components/AdminHeader";
 import { useApproval } from "./ApprovalContext";
 import ConfirmationModal from "../../../components/ui/ConfirmationModal";
 import SuccessModal from "../../../components/ui/SuccessModal";
+import { NumberFormatter } from '../Function_Files/NumberFormatter';
 
-const currency = (n) => `₱${Number(n || 0).toLocaleString()}`;
+const currency = (n) => NumberFormatter.formatCurrency(n);
 
 export default function ApprovalReceipt() {
   const APIConn = `${localStorage.url}admin.php`;
@@ -100,7 +101,7 @@ export default function ApprovalReceipt() {
   return (
     <>
       <AdminHeader />
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="lg:ml-72 p-6 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-2 text-foreground">
           Approve Booking #{bookingId} — Step 2: Receipt
         </h1>

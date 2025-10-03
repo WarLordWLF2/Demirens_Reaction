@@ -43,6 +43,7 @@ function AdminRequestedAmenities() {
   // Add Amenity Request Modal States
   const [addAmenityModalOpen, setAddAmenityModalOpen] = useState(false);
   const [selectedBookingRoomFromNavigation, setSelectedBookingRoomFromNavigation] = useState(null);
+  const [selectedBookingRoomsFromNavigation, setSelectedBookingRoomsFromNavigation] = useState([]);
 
   const location = useLocation();
   const APIConn = `${localStorage.url}admin.php`;
@@ -247,8 +248,20 @@ function AdminRequestedAmenities() {
 
   // Handle navigation state from booking room selection
   useEffect(() => {
-    if (location.state?.selectedBookingRoom && location.state?.openAmenityModal) {
-      setSelectedBookingRoomFromNavigation(location.state.selectedBookingRoom);
+    if (location.state?.openAmenityModal) {
+      // Handle multiple room selection (new)
+      if (location.state?.selectedBookingRooms && location.state.selectedBookingRooms.length > 0) {
+        setSelectedBookingRoomsFromNavigation(location.state.selectedBookingRooms);
+        setSelectedBookingRoomFromNavigation(location.state.selectedBookingRooms[0]); // Set first room for backward compatibility
+        console.log('🏨 Multiple rooms selected from navigation:', location.state.selectedBookingRooms);
+      }
+      // Handle single room selection (backward compatibility)
+      else if (location.state?.selectedBookingRoom) {
+        setSelectedBookingRoomFromNavigation(location.state.selectedBookingRoom);
+        setSelectedBookingRoomsFromNavigation([location.state.selectedBookingRoom]);
+        console.log('🏨 Single room selected from navigation:', location.state.selectedBookingRoom);
+      }
+      
       setAddAmenityModalOpen(true);
       // Clear the navigation state
       window.history.replaceState({}, document.title);
@@ -259,7 +272,7 @@ function AdminRequestedAmenities() {
     return (
       <>
         <AdminHeader />
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="lg:ml-72 flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#113f67] mx-auto mb-4"></div>
             <p className="text-gray-600">Loading amenity requests...</p>
@@ -275,6 +288,7 @@ function AdminRequestedAmenities() {
         notificationRefreshTrigger={notificationRefreshTrigger} 
         resetNotificationsOnPage={true}
       />
+      <div className="lg:ml-72 p-4 space-y-6">
       <div className="p-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -625,7 +639,9 @@ function AdminRequestedAmenities() {
           notificationRefreshTrigger={notificationRefreshTrigger}
           setNotificationRefreshTrigger={setNotificationRefreshTrigger}
           selectedBookingRoomFromNavigation={selectedBookingRoomFromNavigation}
+          selectedBookingRoomsFromNavigation={selectedBookingRoomsFromNavigation}
         />
+      </div>
       </div>
     </>
   );

@@ -128,7 +128,8 @@ function InvoiceManagementSubpage({
         return;
       }
 
-      // Only block if there are pending charges, not missing room assignments
+      // Only block if there are truly pending charges (status = 1)
+      // Charges added by front-desk staff (status = 2) should be allowed for billing
       if (validation.pending_charges > 0) {
         toast.warning(validation.message);
         return;

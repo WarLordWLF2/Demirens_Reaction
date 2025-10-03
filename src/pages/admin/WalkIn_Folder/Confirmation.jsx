@@ -173,7 +173,7 @@ export default function Confirmation() {
   const change = amountPaid - total;
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-8 bg-white dark:bg-gray-900 rounded-md">
+    <div className="lg:ml-72 max-w-3xl mx-auto p-6 space-y-8 bg-white dark:bg-gray-900 rounded-md">
       <h2 className="text-3xl font-extrabold text-center text-gray-900 dark:text-gray-100">
         Booking Confirmation
       </h2>

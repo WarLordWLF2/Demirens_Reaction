@@ -1,6 +1,5 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { useState, useEffect, useCallback } from 'react';
 import AdminModal from '@/pages/admin/components/AdminModal';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -53,6 +52,8 @@ function ChargeMaster() {
   const [selectedCharge, setSelectedCharge] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState("");
 
   const formSchema = z.object({
     chargeName: z.string().min(1, 'Required'),
@@ -71,63 +72,32 @@ function ChargeMaster() {
     },
   });
 
-  // --------- For Modal --------- //
-  const [modalSettings, setModalSettings] = useState({
-    modalMode: '',
-    showModal: false,
-  });
+  // Load data on component mount
+  useEffect(() => {
+    loadCharges();
+    loadCategories();
+  }, []);
 
-  const popAddModal = () => {
-    setModalSettings({
-      modalMode: 'add',
-      showModal: true,
-    });
-  };
-
-  const popUpdateModal = (chargeData) => {
-    console.log("From Update Modal:", chargeData);
-    const formattedData = {
-      chargeName: chargeData.charges_master_name,
-      chargeCategory: chargeData.charges_category_id?.toString(),
-      chargePrice: chargeData.charges_master_price?.toString(),
-      chargeDescription: chargeData.charges_master_description || ''
-    }
-    setSelectedCharge({
-      charge_id: chargeData.charges_master_id,
-      ...formattedData
-    });
-
-    form.reset(formattedData);
-
-    setModalSettings({
-      showModal: true,
-      modalMode: "update"
-    })
-  };
-
-  // --------- API Connections --------- //
-  const getAllCharges = useCallback(async () => {
+  const loadCharges = async () => {
     setIsLoading(true);
     const reqFormCharges = new FormData();
-    reqFormCharges.append('method', 'view_charges');
+    reqFormCharges.append('method', 'viewCharges');
 
     try {
       const conn = await axios.post(APIConn, reqFormCharges);
       if (conn.data) {
         setAllCharges(conn.data !== 0 ? conn.data : []);
-      } else {
-        console.log('No charges data has been fetched...');
       }
     } catch (err) {
-      toast('Failed Connection... ');
+      toast('Failed to load charges');
     } finally {
       setIsLoading(false);
     }
-  }, [APIConn]);
+  };
 
-  const getAllCategories = useCallback(async () => {
+  const loadCategories = async () => {
     const reqFormCategories = new FormData();
-    reqFormCategories.append('method', 'view_charges_category');
+    reqFormCategories.append('method', 'viewChargesCategory');
 
     try {
       const conn = await axios.post(APIConn, reqFormCategories);
@@ -137,87 +107,141 @@ function ChargeMaster() {
     } catch (err) {
       console.log('Failed to fetch categories...');
     }
-  }, [APIConn]);
+  };
+
+  const popAddModal = () => {
+    setModalMode('add');
+    setSelectedCharge(null);
+    form.reset();
+    setShowModal(true);
+  };
+
+  const popUpdateModal = (chargeData) => {
+    const formattedData = {
+      chargeName: chargeData.charges_master_name,
+      chargeCategory: chargeData.charges_category_id?.toString(),
+      chargePrice: chargeData.charges_master_price?.toString(),
+      chargeDescription: chargeData.charges_master_description || ''
+    };
+    
+    setSelectedCharge({
+      charge_id: chargeData.charges_master_id,
+      ...formattedData
+    });
+
+    form.reset(formattedData);
+    setModalMode("update");
+    setShowModal(true);
+  };
 
   const addNewCharge = async (chargeData) => {
     setIsLoading(true);
+    const jsonData = {
+      charge_category: parseInt(chargeData.chargeCategory),
+      charge_name: chargeData.chargeName,
+      charge_price: parseFloat(chargeData.chargePrice),
+      charge_description: chargeData.chargeDescription || ''
+    };
     const addChargeForm = new FormData();
-    addChargeForm.append("method", "add_charge");
-    addChargeForm.append("json", JSON.stringify(chargeData));
+    addChargeForm.append("method", "addCharges");
+    addChargeForm.append("json", JSON.stringify(jsonData));
 
     try {
       const conn = await axios.post(APIConn, addChargeForm);
       if (conn.data === 1) {
         toast("Added New Charge!");
+        resetModal();
+        loadCharges(); // Reload data
+      } else {
+        toast("Failed to add charge");
       }
     } catch (err) {
       toast("Failed to Add Charge...");
     } finally {
-      resetStates();
+      setIsLoading(false);
     }
-  }
+  };
 
   const updateCharge = async (chargeValues) => {
     setIsLoading(true);
     const jsonData = {
       charges_master_id: selectedCharge.charge_id,
-      charges_master_name: chargeValues.chargeName,
-      charges_category_id: parseInt(chargeValues.chargeCategory),
-      charges_master_price: parseInt(chargeValues.chargePrice),
-      charges_master_description: chargeValues.chargeDescription
-    }
+      charge_name: chargeValues.chargeName,
+      charge_category: parseInt(chargeValues.chargeCategory),
+      charge_price: parseFloat(chargeValues.chargePrice),
+      charge_description: chargeValues.chargeDescription || ''
+    };
 
     const updateChargeForm = new FormData();
-    updateChargeForm.append("method", "update_charge");
+    updateChargeForm.append("method", "updateCharges");
     updateChargeForm.append("json", JSON.stringify(jsonData));
 
     try {
       const conn = await axios.post(APIConn, updateChargeForm);
       if (conn.data === 1) {
         toast("Successfully Updated!");
+        resetModal();
+        loadCharges(); // Reload data
       } else {
         toast("Failed to update...");
       }
     } catch (err) {
       toast("Cannot connect to API...");
     } finally {
-      resetStates();
       setIsLoading(false);
     }
-  }
-
-  // --------- Other Functions --------- //
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
   };
 
-  const resetStates = () => {
-    setModalSettings({
-      modalMode: "",
-      showModal: false
-    })
+  const deleteCharge = async () => {
+    if (!selectedCharge) return;
+    
+    setIsLoading(true);
+    const jsonData = {
+      charges_master_id: selectedCharge.charge_id
+    };
+    
+    const formData = new FormData();
+    formData.append("method", "disableCharges");
+    formData.append("json", JSON.stringify(jsonData));
+
+    try {
+      const conn = await axios.post(APIConn, formData);
+      if (conn.data === 1) {
+        toast("Successfully deleted charge");
+        resetModal();
+        loadCharges();
+      } else {
+        toast("Failed to delete charge");
+      }
+    } catch (error) {
+      console.log("API Connection Failed..." + error);
+      toast("Failed to delete");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const popDeleteModal = (charge) => {
+    setModalMode('delete');
+    setSelectedCharge({
+      charge_id: charge.charges_master_id,
+      charge_name: charge.charges_master_name
+    });
+    setShowModal(true);
+  };
+
+  const resetModal = () => {
+    setShowModal(false);
+    setModalMode("");
+    setSelectedCharge(null);
     form.reset();
-    setIsLoading(false);
-  }
+  };
 
   // Filter charges based on search term
   const filteredCharges = allCharges.filter(charge =>
     charge.charges_master_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     charge.charges_category_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  useEffect(() => {
-    if (!modalSettings.showModal) {
-      getAllCharges();
-      getAllCategories();
-    }
-  }, [modalSettings.showModal, getAllCharges, getAllCategories]);
 
   return (
     <>
@@ -228,7 +252,7 @@ function ChargeMaster() {
       ) : (
         <>
           <AdminHeader onCollapse={setIsCollapsed} />
-          <div className={`transition-all duration-300 ${isCollapsed ? 'ml-0' : 'ml-0'} p-6`}>
+          <div className={`transition-all duration-300 ${isCollapsed ? 'ml-0' : 'lg:ml-72'} p-6`}>
             <Card className="shadow-lg">
               <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
                 <div className="flex justify-between items-center">
@@ -402,6 +426,7 @@ function ChargeMaster() {
                                           variant="ghost" 
                                           size="sm" 
                                           className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                                          onClick={() => popDeleteModal(charge)}
                                         >
                                           <Trash2 className="w-4 h-4 mr-2" />
                                           Delete
@@ -429,22 +454,17 @@ function ChargeMaster() {
           </div>
 
           <AdminModal
-            isVisible={modalSettings.showModal}
-            onClose={() =>
-              setModalSettings({
-                modalMode: '',
-                showModal: false,
-              })
-            }
+            isVisible={showModal}
+            onClose={resetModal}
             modalTitle={
-              modalSettings.modalMode === 'add'
+              modalMode === 'add'
                 ? 'Add new Charge'
-                : modalSettings.modalMode === 'update'
+                : modalMode === 'update'
                   ? 'Update Existing Charge'
                   : 'Remove Charge'
             }
           >
-            {modalSettings.modalMode === 'add' && (
+            {modalMode === 'add' && (
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit((values) => addNewCharge(values))}
@@ -528,12 +548,12 @@ function ChargeMaster() {
                     )}
                   />
 
-                  <Button type="submit">Submit</Button>
+                  <Button type="submit" disabled={isLoading}>Submit</Button>
                 </form>
               </Form>
             )}
 
-            {modalSettings.modalMode === 'update' && selectedCharge && (
+            {modalMode === 'update' && selectedCharge && (
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit((values) => {
@@ -622,15 +642,35 @@ function ChargeMaster() {
                     )}
                   />
 
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={isLoading}>
                     Update
                   </Button>
                 </form>
               </Form>
             )}
 
-
-            {modalSettings.modalMode === 'delete' && <>This is where to delete!</>}
+            {modalMode === 'delete' && selectedCharge && (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
+                    <Trash2 className="h-6 w-6 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Delete Charge</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    Are you sure you want to delete <strong>"{selectedCharge.charge_name}"</strong>? This action cannot be undone.
+                  </p>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={resetModal}>
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" onClick={deleteCharge} disabled={isLoading}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Charge
+                  </Button>
+                </div>
+              </div>
+            )}
           </AdminModal>
         </>
       )}

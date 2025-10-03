@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
+import { NumberFormatter } from '../Function_Files/NumberFormatter';
+import { DateFormatter } from '../Function_Files/DateFormatter';
 
 const PaymentMethod = () => {
   const APIConn = `${localStorage.url}admin.php`;
@@ -46,13 +48,7 @@ const PaymentMethod = () => {
       : 0;
 
   const formatDate = (date) =>
-    date
-      ? new Date(date).toLocaleDateString('en-US', {
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric',
-        })
-      : '';
+    date ? DateFormatter.formatLongDate(date) : '';
 
   // Calculate total room rate from multiple selected rooms or single room
   const roomRate = walkInData.selectedRooms
@@ -66,7 +62,7 @@ const PaymentMethod = () => {
   // Set default amount to 50% of total when method changes
   useEffect(() => {
     if (method && !amountPaid) {
-      setAmountPaid((total * 0.5).toFixed(2));
+      setAmountPaid(NumberFormatter.formatCurrencyDecimals(total * 0.5, 0, { showCurrency: false }));
     }
   }, [method, total]);
 
@@ -111,7 +107,7 @@ const PaymentMethod = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-6 max-w-5xl mx-auto">
+    <div className="lg:ml-72 flex flex-col lg:flex-row gap-6 p-6 max-w-5xl mx-auto">
       {/* Payment Form */}
       <Card className="flex-1">
         <CardHeader>
@@ -226,13 +222,13 @@ const PaymentMethod = () => {
             {walkInData.selectedRooms?.length > 0
               ? walkInData.selectedRooms.map((room, idx) => (
                   <li key={idx}>
-                    Room #{room.roomnumber_id || room.id} (Floor {room.roomfloor || room.floor}) - {room.roomtype_name || room.name || 'Room'} - ₱{(room.roomtype_price || room.price || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    Room #{room.roomnumber_id || room.id} (Floor {room.roomfloor || room.floor}) - {room.rooms_type_name || room.name || 'Room'} - {NumberFormatter.formatCurrency(room.roomtype_price || room.price || 0)}
                   </li>
                 ))
               : walkInData.selectedRoom
               ? (
                 <li>
-                  Room #{walkInData.selectedRoom.roomnumber_id || walkInData.selectedRoom.id} - {walkInData.selectedRoom.roomtype_name || walkInData.selectedRoom.name} - ₱{(walkInData.selectedRoom.roomtype_price || walkInData.selectedRoom.price || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  Room #{walkInData.selectedRoom.roomnumber_id || walkInData.selectedRoom.id} - {walkInData.selectedRoom.roomtype_name || walkInData.selectedRoom.name} - {NumberFormatter.formatCurrency(walkInData.selectedRoom.roomtype_price || walkInData.selectedRoom.price || 0)}
                 </li>
               )
               : <li>No rooms selected</li>}
@@ -243,21 +239,21 @@ const PaymentMethod = () => {
           <p><strong>Nights:</strong> {nights}</p>
           <p><strong>Guests:</strong> {walkInData.guests || 1}</p>
           <hr />
-          <p><strong>Room Rate:</strong> ₱{roomRate.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} per night</p>
+          <p><strong>Room Rate:</strong> {NumberFormatter.formatCurrency(roomRate)} per night</p>
           <p>
-            <strong>Subtotal:</strong> ₱{subtotal.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-            <span className="text-gray-500"> ({roomRate.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} × {nights} nights)</span>
+            <strong>Subtotal:</strong> {NumberFormatter.formatCurrency(subtotal)}
+            <span className="text-gray-500"> ({NumberFormatter.formatCurrency(roomRate)} × {nights} nights)</span>
           </p>
-          <p><strong>VAT (12%):</strong> ₱{vat.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-          <p><strong>Discount:</strong> ₱{(Number(discount) || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+          <p><strong>VAT (12%):</strong> {NumberFormatter.formatCurrency(vat)}</p>
+          <p><strong>Discount:</strong> {NumberFormatter.formatCurrency(Number(discount) || 0)}</p>
           <hr />
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg p-4 mt-4">
             <p className="text-xl font-bold text-green-700 dark:text-green-300 text-center">
-              Total: ₱{total.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+              Total: {NumberFormatter.formatCurrency(total)}
             </p>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            <strong>Minimum Payment (50%):</strong> ₱{(total * 0.5).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            <strong>Minimum Payment (50%):</strong> {NumberFormatter.formatCurrency(total * 0.5)}
           </p>
         </CardContent>
       </Card>

@@ -1,6 +1,5 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { useState, useEffect, useCallback } from 'react';
 import AdminModal from '@/pages/admin/components/AdminModal';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -45,6 +44,8 @@ function DiscountMaster() {
   const [selectedDiscount, setSelectedDiscount] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState("");
 
   const formSchema = z.object({
     discountName: z.string().min(1, 'Required'),
@@ -66,137 +67,154 @@ function DiscountMaster() {
     },
   });
 
-  // --------- For Modal --------- //
-  const [modalSettings, setModalSettings] = useState({
-    modalMode: '',
-    showModal: false,
-  });
+  // Load data on component mount
+  useEffect(() => {
+    loadDiscounts();
+  }, []);
+
+  const loadDiscounts = async () => {
+    setIsLoading(true);
+    const reqFormDiscounts = new FormData();
+    reqFormDiscounts.append('method', 'viewDiscounts');
+
+    try {
+      const conn = await axios.post(APIConn, reqFormDiscounts);
+      if (conn.data) {
+        setAllDiscounts(conn.data !== 0 ? conn.data : []);
+      }
+    } catch (err) {
+      toast('Failed to load discounts');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const popAddModal = () => {
-    setModalSettings({
-      modalMode: 'add',
-      showModal: true,
-    });
+    setModalMode('add');
+    setSelectedDiscount(null);
+    form.reset();
+    setShowModal(true);
   };
 
   const popUpdateModal = (discountData) => {
-    console.log("From Update Modal:", discountData);
     const formattedData = {
       discountName: discountData.discounts_name,
       discountPercentage: discountData.discounts_percentage?.toString() || '',
       discountAmount: discountData.discounts_amount?.toString() || '',
       discountDescription: discountData.discounts_description || ''
-    }
+    };
+    
     setSelectedDiscount({
       discount_id: discountData.discounts_id,
       ...formattedData
     });
 
     form.reset(formattedData);
-
-    setModalSettings({
-      showModal: true,
-      modalMode: "update"
-    })
+    setModalMode("update");
+    setShowModal(true);
   };
-
-  // --------- API Connections --------- //
-  const getAllDiscounts = useCallback(async () => {
-    setIsLoading(true);
-    const reqFormDiscounts = new FormData();
-    reqFormDiscounts.append('method', 'view_discount');
-
-    try {
-      const conn = await axios.post(APIConn, reqFormDiscounts);
-      if (conn.data) {
-        setAllDiscounts(conn.data !== 0 ? conn.data : []);
-      } else {
-        console.log('No data has been fetched...');
-      }
-    } catch (err) {
-      toast('Failed Connection... ');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [APIConn]);
 
   const addNewDiscounts = async (discountData) => {
     setIsLoading(true);
     const addDiscountForm = new FormData();
-    addDiscountForm.append("method", "add_discount");
+    addDiscountForm.append("method", "addDiscounts");
     addDiscountForm.append("json", JSON.stringify(discountData));
 
     try {
       const conn = await axios.post(APIConn, addDiscountForm);
       if (conn.data === 1) {
         toast("Added New Discount!");
+        resetModal();
+        loadDiscounts(); // Reload data
+      } else {
+        toast("Failed to add discount");
       }
     } catch (err) {
       toast("Failed to Add Discount...");
     } finally {
-      resetStates();
+      setIsLoading(false);
     }
-  }
+  };
 
   const updateDiscounts = async (discountValues) => {
     setIsLoading(true);
     const jsonData = {
-      discounts_id: selectedDiscount.discount_id,
-      discounts_name: discountValues.discountName,
-      discounts_percentage: discountValues.discountPercentage ? parseFloat(discountValues.discountPercentage) : null,
-      discounts_amount: discountValues.discountAmount ? parseInt(discountValues.discountAmount) : null,
-      discounts_description: discountValues.discountDescription
-    }
+      discount_id: selectedDiscount.discount_id,
+      discountName: discountValues.discountName,
+      discountPercentage: discountValues.discountPercentage ? parseFloat(discountValues.discountPercentage) : null,
+      discountAmount: discountValues.discountAmount ? parseInt(discountValues.discountAmount) : null,
+      discountDescription: discountValues.discountDescription
+    };
 
     const updateDiscForm = new FormData();
-    updateDiscForm.append("method", "update_discount");
+    updateDiscForm.append("method", "updateDiscounts");
     updateDiscForm.append("json", JSON.stringify(jsonData));
 
     try {
       const conn = await axios.post(APIConn, updateDiscForm);
       if (conn.data === 1) {
         toast("Successfully Updated!");
+        resetModal();
+        loadDiscounts(); // Reload data
       } else {
         toast("Failed to update...");
       }
     } catch (err) {
       toast("Cannot connect to API...");
     } finally {
-      resetStates();
       setIsLoading(false);
     }
-  }
-
-  // --------- Other Functions --------- //
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
   };
 
-  const resetStates = () => {
-    setModalSettings({
-      modalMode: "",
-      showModal: false
-    })
+  const deleteDiscount = async () => {
+    if (!selectedDiscount) return;
+    
+    setIsLoading(true);
+    const jsonData = {
+      discount_id: selectedDiscount.discount_id
+    };
+    
+    const formData = new FormData();
+    formData.append("method", "disableDiscounts");
+    formData.append("json", JSON.stringify(jsonData));
+
+    try {
+      const conn = await axios.post(APIConn, formData);
+      if (conn.data === 1) {
+        toast("Successfully deleted discount");
+        resetModal();
+        loadDiscounts();
+      } else {
+        toast("Failed to delete discount");
+      }
+    } catch (error) {
+      console.log("API Connection Failed..." + error);
+      toast("Failed to delete");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const popDeleteModal = (discount) => {
+    setModalMode('delete');
+    setSelectedDiscount({
+      discount_id: discount.discounts_id,
+      discountName: discount.discounts_name
+    });
+    setShowModal(true);
+  };
+
+  const resetModal = () => {
+    setShowModal(false);
+    setModalMode("");
+    setSelectedDiscount(null);
     form.reset();
-    setIsLoading(false);
-  }
+  };
 
   // Filter discounts based on search term
   const filteredDiscounts = allDiscounts.filter(discount =>
     discount.discounts_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  useEffect(() => {
-    if (!modalSettings.showModal) {
-      getAllDiscounts();
-    }
-  }, [modalSettings.showModal, getAllDiscounts]);
 
   return (
     <>
@@ -207,7 +225,7 @@ function DiscountMaster() {
       ) : (
         <>
           <AdminHeader onCollapse={setIsCollapsed} />
-          <div className={`transition-all duration-300 ${isCollapsed ? 'ml-0' : 'ml-0'} p-6`}>
+          <div className={`transition-all duration-300 ${isCollapsed ? 'ml-0' : 'lg:ml-72'} p-6`}>
             <Card className="shadow-lg">
               <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20">
                 <div className="flex justify-between items-center">
@@ -376,6 +394,7 @@ function DiscountMaster() {
                                           variant="ghost" 
                                           size="sm" 
                                           className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                                          onClick={() => popDeleteModal(discount)}
                                         >
                                           <Trash2 className="w-4 h-4 mr-2" />
                                           Delete
@@ -403,22 +422,17 @@ function DiscountMaster() {
           </div>
 
           <AdminModal
-            isVisible={modalSettings.showModal}
-            onClose={() =>
-              setModalSettings({
-                modalMode: '',
-                showModal: false,
-              })
-            }
+            isVisible={showModal}
+            onClose={resetModal}
             modalTitle={
-              modalSettings.modalMode === 'add'
+              modalMode === 'add'
                 ? 'Add new Discount'
-                : modalSettings.modalMode === 'update'
+                : modalMode === 'update'
                   ? 'Update Existing Discount'
                   : 'Remove Discount'
             }
           >
-            {modalSettings.modalMode === 'add' && (
+            {modalMode === 'add' && (
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit((values) => addNewDiscounts(values))}
@@ -502,12 +516,12 @@ function DiscountMaster() {
                     )}
                   />
 
-                  <Button type="submit">Submit</Button>
+                  <Button type="submit" disabled={isLoading}>Submit</Button>
                 </form>
               </Form>
             )}
 
-            {modalSettings.modalMode === 'update' && selectedDiscount && (
+            {modalMode === 'update' && selectedDiscount && (
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit((values) => {
@@ -595,15 +609,35 @@ function DiscountMaster() {
                     )}
                   />
 
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={isLoading}>
                     Update
                   </Button>
                 </form>
               </Form>
             )}
 
-
-            {modalSettings.modalMode === 'delete' && <>This is where to delete!</>}
+            {modalMode === 'delete' && selectedDiscount && (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
+                    <Trash2 className="h-6 w-6 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Delete Discount</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    Are you sure you want to delete <strong>"{selectedDiscount.discountName}"</strong>? This action cannot be undone.
+                  </p>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={resetModal}>
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" onClick={deleteDiscount} disabled={isLoading}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Discount
+                  </Button>
+                </div>
+              </div>
+            )}
           </AdminModal>
         </>
       )}

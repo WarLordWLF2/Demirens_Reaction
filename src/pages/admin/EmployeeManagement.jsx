@@ -14,6 +14,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Plus, Search, Edit, Trash2, Users, Eye, EyeOff } from "lucide-react";
 import AdminHeader from "./components/AdminHeader";
+import { NumberFormatter } from './Function_Files/NumberFormatter';
+import { DateFormatter } from './Function_Files/DateFormatter';
 
 // Form validation schema
 const employeeSchema = z.object({
@@ -270,19 +272,20 @@ function EmployeeManagement() {
   );
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <AdminHeader />
+      <div className="ml-72 p-4 sm:p-6 space-y-6 max-w-7xl">
       
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-[#34699a]/10 dark:bg-[#34699a]/20 rounded-lg">
                 <Users className="h-6 w-6 text-[#34699a] dark:text-[#34699a]" />
               </div>
               <div>
-                <CardTitle className="text-2xl font-bold">Employee Management</CardTitle>
-                <p className="text-muted-foreground mt-1">
+                <CardTitle className="text-xl sm:text-2xl font-bold">Employee Management</CardTitle>
+                <p className="text-muted-foreground mt-1 text-sm sm:text-base">
                   Manage employees and administrators
                 </p>
               </div>
@@ -300,7 +303,7 @@ function EmployeeManagement() {
                   Add Employee
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
                 <DialogHeader>
                   <DialogTitle>
                     {editingEmployee ? 'Edit Employee' : 'Add New Employee'}
@@ -311,7 +314,7 @@ function EmployeeManagement() {
                 </DialogHeader>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="employee_fname"
@@ -356,7 +359,7 @@ function EmployeeManagement() {
                       />
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="employee_username"
@@ -479,7 +482,7 @@ function EmployeeManagement() {
                       )}
                     />
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="employee_birthdate"
@@ -547,11 +550,11 @@ function EmployeeManagement() {
                       )}
                     />
 
-                    <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                      <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
                         Cancel
                       </Button>
-                      <Button type="submit" className="bg-[#34699a] hover:bg-[#2a5580] text-white">
+                      <Button type="submit" className="bg-[#34699a] hover:bg-[#2a5580] text-white w-full sm:w-auto">
                         {editingEmployee ? 'Update Employee' : 'Add Employee'}
                       </Button>
                     </DialogFooter>
@@ -572,7 +575,7 @@ function EmployeeManagement() {
                 
                 {pendingEmployeeData && (
                   <div className="space-y-3 py-4">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                       <div>
                         <span className="font-medium">Name:</span>
                         <p>{pendingEmployeeData.employee_fname} {pendingEmployeeData.employee_lname}</p>
@@ -604,24 +607,25 @@ function EmployeeManagement() {
                     </div>
                     <div className="text-sm">
                       <span className="font-medium">Birthdate:</span>
-                      <p>{new Date(pendingEmployeeData.employee_birthdate).toLocaleDateString()}</p>
+                      <p>{DateFormatter.formatDateOnly(pendingEmployeeData.employee_birthdate)}</p>
                     </div>
                   </div>
                 )}
 
-                <DialogFooter>
+                <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
                   <Button 
                     variant="outline" 
                     onClick={() => {
                       setShowConfirmDialog(false);
                       setPendingEmployeeData(null);
                     }}
+                    className="w-full sm:w-auto"
                   >
                     Cancel
                   </Button>
                   <Button 
                     onClick={handleConfirmAdd}
-                    className="bg-[#34699a] hover:bg-[#2a5580] text-white"
+                    className="bg-[#34699a] hover:bg-[#2a5580] text-white w-full sm:w-auto"
                   >
                     Confirm & Add Employee
                   </Button>
@@ -632,14 +636,14 @@ function EmployeeManagement() {
         </CardHeader>
         <CardContent>
           {/* Search and Filters */}
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="relative flex-1 max-w-sm">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 mb-4">
+            <div className="relative flex-1">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search employees..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
+                className="pl-8 w-full"
               />
             </div>
           </div>
@@ -650,8 +654,8 @@ function EmployeeManagement() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#34699a]"></div>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
+            <div className="rounded-md border overflow-x-auto">
+              <Table className="min-w-[800px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
@@ -690,21 +694,24 @@ function EmployeeManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center gap-1 sm:gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleEdit(employee)}
+                              className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span className="hidden sm:inline ml-1">Edit</span>
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleDelete(employee)}
-                              className="text-red-600 hover:text-red-700"
+                              className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3 text-red-600 hover:text-red-700"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span className="hidden sm:inline ml-1">Delete</span>
                             </Button>
                           </div>
                         </TableCell>
@@ -717,6 +724,7 @@ function EmployeeManagement() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

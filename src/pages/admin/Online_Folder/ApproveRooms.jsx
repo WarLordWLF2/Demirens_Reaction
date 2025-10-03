@@ -14,7 +14,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Search, ChevronDown } from "lucide-react"; // Add ChevronDown import
 
-const currency = (n) => `₱${Number(n || 0).toLocaleString()}`;
+import { NumberFormatter } from '../Function_Files/NumberFormatter';
+const currency = (n) => NumberFormatter.formatCurrency(n);
 
 export default function ApproveRooms() {
   const APIConn = `${localStorage.url}admin.php`;
@@ -198,7 +199,7 @@ export default function ApproveRooms() {
   return (
     <>
       <AdminHeader />
-      <div className="p-6 max-w-6xl mx-auto relative">
+      <div className="lg:ml-72 p-6 max-w-6xl mx-auto relative">
         {/* Floating Button */}
         <button
           type="button"

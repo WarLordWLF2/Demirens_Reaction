@@ -15,8 +15,6 @@ import {
   Mail,
   Phone,
   CheckCircle,
-  Clock,
-  XCircle,
   ArrowRight,
   Building
 } from 'lucide-react';
@@ -30,11 +28,13 @@ function AddAmenityRequestModal({
   onSuccess,
   notificationRefreshTrigger,
   setNotificationRefreshTrigger,
-  selectedBookingRoomFromNavigation 
+  selectedBookingRoomFromNavigation,
+  selectedBookingRoomsFromNavigation 
 }) {
   // Modal state
   const [availableCharges, setAvailableCharges] = useState([]);
   const [selectedBookingRoom, setSelectedBookingRoom] = useState(null);
+  const [selectedBookingRooms, setSelectedBookingRooms] = useState([]);
   const [amenitiesList, setAmenitiesList] = useState([]);
   const [currentAmenity, setCurrentAmenity] = useState({
     charges_master_id: '',
@@ -218,6 +218,7 @@ function AddAmenityRequestModal({
     });
     setSelectedCharge(null);
     setSelectedBookingRoom(null);
+    setSelectedBookingRooms([]);
     setAmenitiesList([]);
     setBookingChargeStatus(2); // Reset to Approved
   };
@@ -247,14 +248,6 @@ function AddAmenityRequestModal({
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 1: return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 2: return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 3: return <XCircle className="h-4 w-4 text-red-600" />;
-      default: return <Clock className="h-4 w-4 text-yellow-600" />;
-    }
-  };
 
 
   // Load data when modal opens
@@ -273,11 +266,18 @@ function AddAmenityRequestModal({
 
   // Handle selected booking room from navigation
   useEffect(() => {
-    if (selectedBookingRoomFromNavigation) {
+    if (selectedBookingRoomsFromNavigation && selectedBookingRoomsFromNavigation.length > 0) {
+      // Handle multiple rooms selection
+      setSelectedBookingRooms(selectedBookingRoomsFromNavigation);
+      setSelectedBookingRoom(selectedBookingRoomsFromNavigation[0]); // Set first room as primary
+      console.log('🏨 Multiple rooms selected from navigation:', selectedBookingRoomsFromNavigation);
+    } else if (selectedBookingRoomFromNavigation) {
+      // Handle single room selection (backward compatibility)
       setSelectedBookingRoom(selectedBookingRoomFromNavigation);
-      console.log('🏨 Selected booking room from navigation:', selectedBookingRoomFromNavigation);
+      setSelectedBookingRooms([selectedBookingRoomFromNavigation]);
+      console.log('🏨 Single room selected from navigation:', selectedBookingRoomFromNavigation);
     }
-  }, [selectedBookingRoomFromNavigation]);
+  }, [selectedBookingRoomFromNavigation, selectedBookingRoomsFromNavigation]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -288,6 +288,12 @@ function AddAmenityRequestModal({
               <Plus className="h-6 w-6 text-white" />
             </div>
             Add Amenity Requests
+            {selectedBookingRooms.length > 1 && (
+              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1">
+                <Building className="h-3 w-3 mr-1" />
+                {selectedBookingRooms.length} Rooms
+              </Badge>
+            )}
             <div className="ml-auto">
               <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-3 py-1">
                 <CheckCircle className="h-3 w-3 mr-1" />
@@ -297,91 +303,134 @@ function AddAmenityRequestModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
-          {/* Left Column - Booking Selection */}
-          <div className="xl:col-span-1 space-y-4">
-            <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-               <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-lg">
-                 <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-white">
-                   <div className="p-1.5 bg-blue-100 dark:bg-blue-900 rounded-md">
-                     <Building className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                   </div>
-                   Select Booking Room
-                 </CardTitle>
-               </CardHeader>
-               <CardContent className="space-y-4">
-                 <div className="space-y-2">
-                   <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                     Booking Room *
-                   </Label>
-                   {!selectedBookingRoom ? (
-                     <Button
-                       onClick={handleNavigateToBookingRoomSelection}
-                       variant="outline"
-                       className="w-full h-12 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-dashed border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-800/30 dark:hover:to-indigo-800/30 transition-all duration-200"
-                     >
-                       <Building className="h-4 w-4 mr-2" />
-                       Choose a booking room...
-                       <ArrowRight className="h-4 w-4 ml-2" />
-                     </Button>
-                   ) : (
-                     <div className="space-y-2">
-                       <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 p-3 rounded-lg">
-                         <div className="flex items-center justify-between">
-                           <div className="flex items-center gap-2">
-                             <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                             <span className="text-sm font-medium text-green-800 dark:text-green-300">
-                               Room #{selectedBookingRoom.roomnumber_id} • {selectedBookingRoom.roomtype_name}
-                             </span>
-                           </div>
-                           <Button
-                             size="sm"
-                             variant="outline"
-                             onClick={handleNavigateToBookingRoomSelection}
-                             className="text-xs h-7 px-2"
-                           >
-                             Change
-                           </Button>
+        {/* Booking Selection Card - Full Width at Top */}
+        <div className="mb-6">
+          <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+             <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-lg">
+               <CardTitle className="text-lg flex items-center gap-2 text-gray-900 dark:text-white">
+                 <div className="p-1.5 bg-blue-100 dark:bg-blue-900 rounded-md">
+                   <Building className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                 </div>
+                 Select Booking Room
+               </CardTitle>
+             </CardHeader>
+             <CardContent className="space-y-4">
+               <div className="space-y-2">
+                 <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                   Selected Booking Room{selectedBookingRooms.length > 1 ? 's' : ''} *
+                 </Label>
+                 {selectedBookingRooms.length === 0 ? (
+                   <Button
+                     onClick={handleNavigateToBookingRoomSelection}
+                     variant="outline"
+                     className="w-full h-12 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-dashed border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-800/30 dark:hover:to-indigo-800/30 transition-all duration-200"
+                   >
+                     <Building className="h-4 w-4 mr-2" />
+                     Choose booking room{selectedBookingRooms.length > 1 ? 's' : ''}...
+                     <ArrowRight className="h-4 w-4 ml-2" />
+                   </Button>
+                 ) : (
+                   <div className="space-y-3">
+                     {/* Multiple rooms indicator */}
+                     {selectedBookingRooms.length > 1 && (
+                       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 p-2 rounded-lg">
+                         <div className="flex items-center gap-2">
+                           <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                           <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                             {selectedBookingRooms.length} rooms selected
+                           </span>
                          </div>
                        </div>
+                     )}
+                     
+                     {/* Display all selected rooms */}
+                     <div className="space-y-2 max-h-48 overflow-y-auto">
+                       {selectedBookingRooms.map((room, index) => (
+                         <div key={room.booking_room_id} className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 p-3 rounded-lg">
+                           <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-2">
+                               <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                               <span className="text-sm font-medium text-green-800 dark:text-green-300">
+                                 Room #{room.roomnumber_id} • {room.roomtype_name}
+                               </span>
+                               {selectedBookingRooms.length > 1 && (
+                                 <Badge variant="outline" className="text-xs text-green-600 dark:text-green-400 border-green-600 dark:border-green-400">
+                                   {index + 1}
+                                 </Badge>
+                               )}
+                             </div>
+                           </div>
+                         </div>
+                       ))}
                      </div>
-                   )}
-                 </div>
-                 
-                 {selectedBookingRoom && (
-                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 p-4 rounded-lg">
-                     <div className="space-y-3">
+                     
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={handleNavigateToBookingRoomSelection}
+                       className="w-full text-xs h-8"
+                     >
+                       Change Selection
+                     </Button>
+                   </div>
+                 )}
+               </div>
+               
+               {selectedBookingRoom && (
+                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 p-4 rounded-lg">
+                   <div className="space-y-3">
+                     {/* Customer info header with multiple rooms indicator */}
+                     <div className="flex items-center justify-between">
                        <div className="flex items-center gap-2">
                          <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                          <span className="font-medium text-base text-gray-900 dark:text-white">{selectedBookingRoom.customer_name}</span>
                        </div>
-                       <div className="flex items-center gap-2">
-                         <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                         <span className="text-sm text-gray-700 dark:text-gray-300">{selectedBookingRoom.customers_email}</span>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                         <span className="text-sm text-gray-700 dark:text-gray-300">{selectedBookingRoom.customers_phone}</span>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                         <span className="text-sm text-gray-700 dark:text-gray-300">{selectedBookingRoom.booking_status_name}</span>
-                       </div>
+                       {selectedBookingRooms.length > 1 && (
+                         <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs">
+                           {selectedBookingRooms.length} rooms
+                         </Badge>
+                       )}
+                     </div>
+                     
+                     <div className="flex items-center gap-2">
+                       <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                       <span className="text-sm text-gray-700 dark:text-gray-300">{selectedBookingRoom.customers_email}</span>
+                     </div>
+                     <div className="flex items-center gap-2">
+                       <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                       <span className="text-sm text-gray-700 dark:text-gray-300">{selectedBookingRoom.customers_phone}</span>
+                     </div>
+                     <div className="flex items-center gap-2">
+                       <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                       <span className="text-sm text-gray-700 dark:text-gray-300">{selectedBookingRoom.booking_status_name}</span>
+                     </div>
+                     
+                     {/* Show primary room info */}
+                     <div className="flex items-center gap-2">
+                       <Building className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                       <span className="text-sm text-gray-700 dark:text-gray-300">
+                         Primary: Room #{selectedBookingRoom.roomnumber_id} • {selectedBookingRoom.roomtype_name}
+                       </span>
+                     </div>
+                     
+                     {/* Show all room numbers if multiple rooms */}
+                     {selectedBookingRooms.length > 1 && (
                        <div className="flex items-center gap-2">
                          <Building className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                           Room #{selectedBookingRoom.roomnumber_id} • {selectedBookingRoom.roomtype_name}
+                           All rooms: {selectedBookingRooms.map(room => `#${room.roomnumber_id}`).join(', ')}
                          </span>
                        </div>
-                     </div>
+                     )}
                    </div>
-                 )}
-               </CardContent>
-            </Card>
+                 </div>
+               )}
+             </CardContent>
+          </Card>
+        </div>
 
-          </div>
-
-          {/* Middle Column - Add Amenity */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {/* Left Column - Add Amenity */}
           <div className="xl:col-span-1 space-y-4">
             <Card className="shadow-lg border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
               <CardHeader className="pb-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-t-lg">
@@ -631,12 +680,12 @@ function AddAmenityRequestModal({
             {loadingAddAmenity ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Adding {amenitiesList.length} Amenit{amenitiesList.length !== 1 ? 'ies' : 'y'}...
+                Adding {amenitiesList.length} Amenit{amenitiesList.length !== 1 ? 'ies' : 'y'} to {selectedBookingRooms.length} Room{selectedBookingRooms.length > 1 ? 's' : ''}...
               </>
             ) : (
               <>
                 <Plus className="h-4 w-4 mr-2" />
-                Add {amenitiesList.length} Amenit{amenitiesList.length !== 1 ? 'ies' : 'y'}
+                Add {amenitiesList.length} Amenit{amenitiesList.length !== 1 ? 'ies' : 'y'} to {selectedBookingRooms.length} Room{selectedBookingRooms.length > 1 ? 's' : ''}
               </>
             )}
           </Button>

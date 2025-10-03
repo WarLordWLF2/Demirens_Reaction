@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { NumberFormatter } from '../Function_Files/NumberFormatter'
+import { DateFormatter } from '../Function_Files/DateFormatter'
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -193,11 +195,7 @@ const CustomerPayment = ({ customer, onBack }) => {
   }
 
   const formatDate = (dateStr) =>
-    new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
+    DateFormatter.formatLongDate(dateStr)
 
   const handlePay = () => {
     console.log("Processing payment...");
@@ -310,12 +308,10 @@ const CustomerPayment = ({ customer, onBack }) => {
                                 <TableCell>{bill.item_name}</TableCell>
                                 <TableCell>{bill.item_amount || 1}</TableCell>
                                 <TableCell>
-                                  ₱ {parseFloat(bill.item_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                  {NumberFormatter.formatCurrency(bill.item_price)}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  ₱ {(parseFloat(bill.item_price) * (bill.item_amount || 1)).toLocaleString(undefined, {
-                                    minimumFractionDigits: 2,
-                                  })}
+                                  {NumberFormatter.formatCurrency(parseFloat(bill.item_price) * (bill.item_amount || 1))}
                                 </TableCell>
                               </TableRow>
                             ))
@@ -342,15 +338,15 @@ const CustomerPayment = ({ customer, onBack }) => {
                 <CardContent className="text-sm space-y-1">
                   <p>
                     <span className="font-semibold">Total Amount:</span>{" "}
-                    ₱ {totalCharges.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                    {NumberFormatter.formatCurrency(totalCharges)}
                   </p>
                   <p>
                     <span className="font-semibold">Downpayment:</span>{" "}
-                    ₱ {downpayment.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                    {NumberFormatter.formatCurrency(downpayment)}
                   </p>
                   <p>
                     <span className="font-semibold">Balance:</span>{" "}
-                    ₱ {balance.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                    {NumberFormatter.formatCurrency(balance)}
                   </p>
 
                 </CardContent>

@@ -201,7 +201,7 @@ const AddWalkIn = () => {
   return (
     <>
       <AdminHeader />
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="lg:ml-72 p-6 max-w-4xl mx-auto">
         <Card className="shadow-lg border rounded-2xl">
           <CardHeader>
             <CardTitle className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
