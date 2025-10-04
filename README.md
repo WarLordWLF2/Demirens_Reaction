@@ -1,9 +1,9 @@
-# Demiren Hotel System (Admin Side) 3.1.5
+# Demiren Hotel System (Admin Side) 4.0
 
 This project focuses on the admin side of the project. If you want to check the customer's side click the link to check my friend's project [beabanana](https://github.com/wannabeayours/Reactjs-Demirens).
 
 ### Update Logs
-### 4.0.0 (October 3, 2025)
+### 4.0 (October 3, 2025)
 
 ## `Booking List Page`
 - Updated the extended room to handle multiple rooms and made it less confusing.
