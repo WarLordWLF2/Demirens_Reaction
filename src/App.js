@@ -73,6 +73,7 @@ import BookingDisplayInvoiceSample from './pages/frontdesk/BookingDisplayInvoice
 import FrontdeskDashboard from './pages/frontdesk/FrontdeskDashboard';
 import FrontdeskBookingList from './pages/frontdesk/BookingList';
 import FrontdeskTransactionHis from './pages/frontdesk/TransactionHis';
+import FrontdeskReservation from './pages/frontdesk/FrontdeskResvation';
 
 
 function App() {
@@ -276,6 +277,7 @@ function App() {
                 <Route path="/frontdesk/dashboard" element={<FrontdeskDashboard />} />
                 <Route path="/frontdesk/booking-list" element={<FrontdeskBookingList />} />
                 <Route path="/frontdesk/transaction-history" element={<FrontdeskTransactionHis />} />
+                <Route path="/frontdesk/reservations" element={<FrontdeskReservation />} />
                 
                 {/* Legacy Frontdesk Routes */}
                 <Route path="/BookingChargesMaster" element={<BookingChargesMaster />} />

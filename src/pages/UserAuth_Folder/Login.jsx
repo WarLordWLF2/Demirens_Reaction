@@ -141,7 +141,7 @@ function Login() {
                     localStorage.setItem("userType", "employee");
                     localStorage.setItem("userLevel", user.userlevel_name);
                     setTimeout(() => {
-                        navigateTo("/frontdesk");
+                        navigateTo("/frontdesk/dashboard");
                     }, 1500);
                 } else if (userType === "admin") {
                     toast.success("Successfully logged in as Admin");

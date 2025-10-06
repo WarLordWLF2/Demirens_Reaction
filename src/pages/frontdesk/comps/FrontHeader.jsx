@@ -1,6 +1,6 @@
 import React from 'react'
-import ThemeToggle from './ThemeToggle'
-import FDSidebar from '@/components/layout/FDSidebar'
+import ThemeToggle from '../../../components/layout/ThemeToggle'
+import FDSidebar from './FDSidebar'
 
 function FrontHeader() {
   return (

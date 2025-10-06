@@ -1,5 +1,5 @@
 import React from 'react'
-import FrontHeader from "@/components/layout/FrontHeader";
+import FrontHeader from "@/pages/frontdesk/comps/FrontHeader";
 
 const HouseKeep = () => {
   return (

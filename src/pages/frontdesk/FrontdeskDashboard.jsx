@@ -1,5 +1,5 @@
 import React from 'react'
-import FrontHeader from '@/components/layout/FrontHeader'
+import FrontHeader from '@/pages/frontdesk/comps/FrontHeader'
 import axios from 'axios'
 import { useState, useEffect } from 'react'
 
@@ -94,24 +94,31 @@ function FrontdeskDashboard() {
 
   const getBookings = async () => {
     setIsLoading(true);
-    const formData = new FormData();
-    formData.append('method', 'view-reservations');
 
     try {
-      const conn = await axios.post(APIConn, formData);
+      const conn = await axios.get(`${APIConn}?method=viewBookingList`);
+      console.log('API Response:', conn.data);
+      
+      // Parse the JSON response
+      let bookingData = [];
       if (conn.data) {
-        console.log(conn.data)
-        setResvData(conn.data !== 0 ? conn.data : 0)
-      } else {
-        toast('Failed to connect');
+        try {
+          bookingData = JSON.parse(conn.data);
+        } catch (parseError) {
+          console.error('Error parsing JSON:', parseError);
+          bookingData = [];
+        }
       }
+      
+      // Ensure resvData is always an array
+      setResvData(Array.isArray(bookingData) ? bookingData : []);
 
     } catch (err) {
-      toast('Something went wrong');
-      console.log(err)
+      setResvData([]); // Set to empty array on error
+      toast.error('Failed to load bookings');
+      console.error('Error fetching bookings:', err);
     } finally {
       resetUseState();
-      toast('Done Loading');
     }
   }
 
@@ -122,8 +129,10 @@ function FrontdeskDashboard() {
     }
 
     const formData = new FormData();
-    formData.append("method", "record-booking-status");
-    formData.append("json", JSON.stringify(dataSummary));
+    formData.append("method", "changeBookingStatus");
+    formData.append("booking_id", selData.booking_id);
+    formData.append("booking_status_id", permission);
+    formData.append("employee_id", localStorage.getItem('userId') || 1);
     console.log(formData)
 
     try {
@@ -170,17 +179,11 @@ function FrontdeskDashboard() {
       setIsStatsLoading(true);
       
       // Fetch active bookings
-      const activeBookingsFormData = new FormData();
-      activeBookingsFormData.append('method', 'getActiveBookingsForDashboard');
-      
-      const activeBookingsResponse = await axios.post(APIConn, activeBookingsFormData);
+      const activeBookingsResponse = await axios.get(`${APIConn}?method=getActiveBookingsForDashboard`);
       const activeBookingsData = JSON.parse(activeBookingsResponse.data);
       
       // Fetch transaction stats
-      const statsFormData = new FormData();
-      statsFormData.append('method', 'getTransactionStats');
-      
-      const statsResponse = await axios.post(APIConn, statsFormData);
+      const statsResponse = await axios.get(`${APIConn}?method=getTransactionStats`);
       const statsData = statsResponse.data;
       
       setStats({
@@ -338,35 +341,44 @@ function FrontdeskDashboard() {
                 {/* Scrollable table body */}
                 <ScrollArea className="h-[400px] w-full">
                   <TableBody>
-                    {resvData.map((reservations, index) => (
+                    {Array.isArray(resvData) && resvData.length > 0 ? (
+                      resvData.map((booking, index) => (
                       <TableRow key={index}>
-                        <TableCell>{reservations.booking_id}</TableCell>
-                        <TableCell>{reservations.customers_walk_in_id === null ? 'Yes' : 'No'}</TableCell>
+                        <TableCell>{booking.booking_id}</TableCell>
+                        <TableCell>{booking.customers_walk_in_id ? 'Yes' : 'No'}</TableCell>
                         <TableCell>
-                          {reservations.customers_walk_in_id !== null
-                            ? reservations.fullname
-                            : reservations.customers_online_username}
+                          <div>
+                            <div className="font-medium">{booking.customer_name}</div>
+                            <div className="text-sm text-gray-500">{booking.customer_email}</div>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={
-                            reservations.booking_status_name === 'Approved' ? 'default' :
-                            reservations.booking_status_name === 'Pending' ? 'secondary' :
-                            reservations.booking_status_name === 'Cancelled' ? 'destructive' : 'secondary'
+                            booking.booking_status === 'Approved' ? 'default' :
+                            booking.booking_status === 'Pending' ? 'secondary' :
+                            booking.booking_status === 'Cancelled' ? 'destructive' : 'secondary'
                           }>
-                            {reservations.booking_status_name ?? "Pending"}
+                            {booking.booking_status ?? "Pending"}
                           </Badge>
                         </TableCell>
-                        <TableCell>{formatCurrency(reservations.booking_downpayment)}</TableCell>
-                        <TableCell>{formatDateTime(reservations.booking_checkin_dateandtime)}</TableCell>
-                        <TableCell>{formatDateTime(reservations.booking_checkout_dateandtime)}</TableCell>
-                        <TableCell>{reservations.ref_num}</TableCell>
+                        <TableCell>{formatCurrency(booking.downpayment)}</TableCell>
+                        <TableCell>{formatDateTime(booking.booking_checkin_dateandtime)}</TableCell>
+                        <TableCell>{formatDateTime(booking.booking_checkout_dateandtime)}</TableCell>
+                        <TableCell>{booking.reference_no}</TableCell>
                         <TableCell>
-                          <Button className="h-8 px-3 text-sm" onClick={() => editStatus(reservations)}>
+                          <Button className="h-8 px-3 text-sm" onClick={() => editStatus(booking)}>
                             <Ellipsis />
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                          No bookings found
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </ScrollArea>
               </Table>

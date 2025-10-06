@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect } from 'react'
-import FrontHeader from '@/components/layout/FrontHeader'
+import FrontHeader from '@/pages/frontdesk/comps/FrontHeader'
 import { useState } from 'react'
 import axios from 'axios'
 

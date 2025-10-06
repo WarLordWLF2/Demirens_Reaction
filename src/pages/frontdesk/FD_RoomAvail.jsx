@@ -1,5 +1,5 @@
 import React from 'react'
-import FrontHeader from '@/components/layout/FrontHeader'
+import FrontHeader from '@/pages/frontdesk/comps/FrontHeader'
 
 function FD_RoomAvail() {
  const APIConn = `${localStorage.url}front-desk.php`;

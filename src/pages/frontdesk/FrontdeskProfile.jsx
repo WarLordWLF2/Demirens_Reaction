@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import FrontHeader from "@/components/layout/FrontHeader";
+import FrontHeader from "@/pages/frontdesk/comps/FrontHeader";
 import FrontdeskModal from "./sheets/FrontdeskModal";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";

@@ -66,7 +66,7 @@ function BookingNoaccount({ rooms, selectedRoom, guestNumber: initialGuestNumber
       return;
     }
 
-    setAlertMessage("All payments are non-refundable. However, bookings may be canceled within 24 hours of confirmation.");
+    setAlertMessage("All payments are non-refundable. However, bookings may be canceled within 24 hours of confirmation. You will receive an email notification once your booking is confirmed.");
     setShowAlert(true);
   };
   const handleCloseAlert = async (status) => {
@@ -186,7 +186,7 @@ function BookingNoaccount({ rooms, selectedRoom, guestNumber: initialGuestNumber
       const res = await axios.post(url, formData);
       console.log("res ni no account", res);
       if (res.data === 1) {
-        toast.success("Booking successful");
+        toast.success("Booking successful! Check your email for confirmation details.");
         setOpen(false);
         localStorage.removeItem('checkIn')
         localStorage.removeItem('checkOut')

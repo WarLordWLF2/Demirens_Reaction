@@ -1,15 +1,26 @@
 import React, { useState } from 'react'
-import { Button } from '../ui/button'
+import { Button } from '@/components/ui/button'
 import { MenuSquareIcon, Home, User, BedIcon, Calendar1Icon, LogOutIcon, PillBottleIcon, HistoryIcon, UserPlusIcon, CalendarCheckIcon, CreditCardIcon, List, Receipt } from "lucide-react"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet"
-import { ScrollArea } from '../ui/scroll-area'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 
 function FDSidebar() {
+  const navigate = useNavigate();
   const [openBookingList, setOpenBookingList] = useState(false);
   const [openMasters, setOpenMasters] = useState(false);
+
+  const handleLogout = () => {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (e) {
+      // ignore storage errors
+    }
+    navigate('/login');
+  }
 
   return (
     <div>
@@ -110,7 +121,7 @@ function FDSidebar() {
           </ScrollArea>
 
           <div className="absolute bottom-4 left-4 right-4 border-t pt-4 bg-background">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleLogout}>
               <LogOutIcon className="w-4 h-4 mr-2" />
               Logout
             </Button>
