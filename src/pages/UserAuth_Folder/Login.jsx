@@ -140,8 +140,9 @@ function Login() {
                     localStorage.setItem("lname", user.employee_lname);
                     localStorage.setItem("userType", "employee");
                     localStorage.setItem("userLevel", user.userlevel_name);
-                    // For now, just show success message and stay on login page
-                    // TODO: Navigate to employee dashboard when ready
+                    setTimeout(() => {
+                        navigateTo("/frontdesk");
+                    }, 1500);
                 } else if (userType === "admin") {
                     toast.success("Successfully logged in as Admin");
                     console.log("=== ADMIN LOGIN INFO ===");

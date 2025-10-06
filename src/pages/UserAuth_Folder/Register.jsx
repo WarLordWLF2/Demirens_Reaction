@@ -24,7 +24,7 @@ const Register = () => {
       lower: /[a-z]/.test(password),
       number: /[0-9]/.test(password),
       maxThreeNumbers: (password.match(/[0-9]/g) || []).length <= 3,
-      noSpecials: /^[A-Za-z0-9]*$/.test(password),
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
       noSpaces: !/\s/.test(password),
     };
 
@@ -523,8 +523,8 @@ const Register = () => {
                       <li className={rules.maxThreeNumbers ? "text-green-400" : "text-red-400"}>
                         {rules.maxThreeNumbers ? "✔" : "✘"} Max 3 numbers
                       </li>
-                      <li className={rules.noSpecials ? "text-green-400" : "text-red-400"}>
-                        {rules.noSpecials ? "✔" : "✘"} No special characters
+                      <li className={rules.special ? "text-green-400" : "text-red-400"}>
+                        {rules.special ? "✔" : "✘"} At least 1 special character
                       </li>
                       <li className={rules.noSpaces ? "text-green-400" : "text-red-400"}>
                         {rules.noSpaces ? "✔" : "✘"} No spaces
