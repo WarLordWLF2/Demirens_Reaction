@@ -305,10 +305,9 @@ function AdminBookingList() {
 
   // Payment validation function
   const checkRemainingBalance = (booking) => {
-    const totalAmount = parseFloat(booking.total_amount) || 0;
-    const downpayment = parseFloat(booking.downpayment) || 0;
-    const remaining = Math.max(0, totalAmount - downpayment);
-    return remaining;
+    // ONLY use balance from database - no calculations
+    const balance = parseFloat(booking.balance);
+    return balance || 0;
   };
 
   const isValidForCheckOut = (booking) => {
@@ -1431,17 +1430,15 @@ function AdminBookingList() {
                           <div className="space-y-1">
                             <div className={`font-semibold text-xs ${
                               (() => {
-                                const totalAmount = parseFloat(b.total_amount) || 0;
-                                const downpayment = parseFloat(b.downpayment) || 0;
-                                const remaining = Math.max(0, totalAmount - downpayment);
-                                return remaining === 0 ? "text-green-600 dark:text-green-400" : "text-orange-600 dark:text-orange-400";
+                                // ONLY use balance from database
+                                const balance = parseFloat(b.balance);
+                                return balance === 0 ? "text-green-600 dark:text-green-400" : "text-orange-600 dark:text-orange-400";
                               })()
                             }`}>
                               {(() => {
-                                const totalAmount = parseFloat(b.total_amount) || 0;
-                                const downpayment = parseFloat(b.downpayment) || 0;
-                                const remaining = Math.max(0, totalAmount - downpayment);
-                                return remaining === 0 ? "Fully Paid" : NumberFormatter.formatCurrency(remaining);
+                                // ONLY use balance from database
+                                const balance = parseFloat(b.balance);
+                                return balance === 0 ? "Fully Paid" : NumberFormatter.formatCurrency(balance);
                               })()}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -1450,7 +1447,14 @@ function AdminBookingList() {
                           </div>
                         </TableCell>
                         <TableCell className="text-center py-3">
-                          {getStatusBadge(b.booking_status)}
+                          {(() => {
+                            // ONLY use balance from database - auto-checkout if balance is 0
+                            const balance = parseFloat(b.balance);
+                            if (balance === 0) {
+                              return getStatusBadge('Checked-Out');
+                            }
+                            return getStatusBadge(b.booking_status);
+                          })()}
                         </TableCell>
                         <TableCell className="text-center py-3">
                           <div className="flex gap-1 sm:gap-2 justify-center flex-wrap">
@@ -1517,7 +1521,14 @@ function AdminBookingList() {
                   <div className="relative flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-3 mb-2">
-                        {getStatusBadge(selectedBooking.booking_status)}
+                        {(() => {
+                          // ONLY use balance from database - auto-checkout if balance is 0
+                          const balance = parseFloat(selectedBooking.balance);
+                          if (balance === 0) {
+                            return getStatusBadge('Checked-Out');
+                          }
+                          return getStatusBadge(selectedBooking.booking_status);
+                        })()}
                         <span className="text-sm text-gray-600 dark:text-gray-400">Booking Status</span>
                       </div>
                       <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedBooking.customer_name}</h2>
@@ -1542,7 +1553,16 @@ function AdminBookingList() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</label>
-                      <div className="mt-1">{getStatusBadge(selectedBooking.booking_status)}</div>
+                      <div className="mt-1">
+                        {(() => {
+                          // ONLY use balance from database - auto-checkout if balance is 0
+                          const balance = parseFloat(selectedBooking.balance);
+                          if (balance === 0) {
+                            return getStatusBadge('Checked-Out');
+                          }
+                          return getStatusBadge(selectedBooking.booking_status);
+                        })()}
+                      </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Check-in Date</label>
@@ -1564,14 +1584,13 @@ function AdminBookingList() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Remaining Balance</label>
-                      <p className="text-gray-900 dark:text-white font-semibold">
-                        {(() => {
-                          const totalAmount = parseFloat(selectedBooking.total_amount) || 0;
-                          const downpayment = parseFloat(selectedBooking.downpayment) || 0;
-                          const remaining = Math.max(0, totalAmount - downpayment); // Ensure non-negative
-                          return NumberFormatter.formatCurrencyDecimals(remaining, 0, { showCurrency: false });
-                        })()}
-                      </p>
+                        <p className="text-gray-900 dark:text-white font-semibold">
+                          {(() => {
+                            // ONLY use balance from database
+                            const balance = parseFloat(selectedBooking.balance);
+                            return balance === 0 ? "Fully Paid" : NumberFormatter.formatCurrencyDecimals(balance, 0, { showCurrency: false });
+                          })()}
+                        </p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Room Details</label>
@@ -1868,7 +1887,16 @@ function AdminBookingList() {
                   </p>
                   <p className="text-sm text-gray-900 dark:text-white">
                     <span className="font-medium">Current Status:</span>
-                    <span className="ml-2">{getStatusBadge(selectedBooking.booking_status)}</span>
+                    <span className="ml-2">
+                      {(() => {
+                        // ONLY use balance from database - auto-checkout if balance is 0
+                        const balance = parseFloat(selectedBooking.balance);
+                        if (balance === 0) {
+                          return getStatusBadge('Checked-Out');
+                        }
+                        return getStatusBadge(selectedBooking.booking_status);
+                      })()}
+                    </span>
                   </p>
                 </div>
 
