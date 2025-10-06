@@ -118,13 +118,7 @@ function RoomsList({ rooms, selectedRooms, setSelectedRooms }) {
           <h1 className="font-semibold text-blue-500">₱ {rooms.roomtype_price}</h1>
          </div>
          <div className="relative h-full"> {/* or set a specific height */}
-          <Button 
-            className="absolute bottom-0 right-0 m-4" 
-            onClick={() => handleBookedRoom(rooms)}
-            disabled={rooms.status_id !== 3}
-          >
-            {rooms.status_id !== 3 ? 'Room Occupied' : 'Add Room'}
-          </Button>
+          <Button className="absolute bottom-0 right-0 m-4" onClick={() => handleBookedRoom(rooms)}>Add Room</Button>
          </div>
         </div>
         <Separator className="my-4" />

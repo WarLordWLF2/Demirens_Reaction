@@ -60,6 +60,8 @@ function AdminBookingList() {
   const [showPaymentValidation, setShowPaymentValidation] = useState(false);
   const [validationBooking, setValidationBooking] = useState(null);
   const [extendedRooms, setExtendedRooms] = useState([]);
+  const [invoiceData, setInvoiceData] = useState(null);
+  const [billingData, setBillingData] = useState([]);
 
   const getAllStatus = useCallback(async () => {
     const formData = new FormData();
@@ -258,6 +260,10 @@ function AdminBookingList() {
     setSelectedBooking(booking);
     setIsRoomDetailsExpanded(false); // Reset dropdown state when opening modal
     setShowCustomerDetails(true);
+    
+    // Fetch invoice and billing data
+    fetchInvoiceData(booking);
+    fetchBillingData(booking);
   };
 
   const handleRoomChangeSuccess = () => {
@@ -308,6 +314,62 @@ function AdminBookingList() {
   const isValidForCheckOut = (booking) => {
     const remainingBalance = checkRemainingBalance(booking);
     return remainingBalance <= 0;
+  };
+
+  // Check if booking has a complete invoice
+  const checkInvoiceStatus = async (booking) => {
+    try {
+      const formData = new FormData();
+      formData.append('method', 'checkInvoiceStatus');
+      formData.append('json', JSON.stringify({ reference_no: booking.reference_no }));
+
+      const res = await axios.post(APIConn, formData);
+      if (res.data && res.data.success) {
+        return res.data.has_complete_invoice;
+      }
+      return false;
+    } catch (err) {
+      console.error('Error checking invoice status:', err);
+      return false;
+    }
+  };
+
+  // Fetch invoice data for a booking
+  const fetchInvoiceData = async (booking) => {
+    try {
+      const formData = new FormData();
+      formData.append('method', 'getCustomerInvoice');
+      formData.append('json', JSON.stringify({ reference_no: booking.reference_no }));
+
+      const res = await axios.post(APIConn, formData);
+      if (res.data && res.data.success) {
+        setInvoiceData(res.data.invoice_data);
+      } else {
+        setInvoiceData(null);
+      }
+    } catch (err) {
+      console.error('Error fetching invoice data:', err);
+      setInvoiceData(null);
+    }
+  };
+
+  // Fetch billing data for a booking
+  const fetchBillingData = async (booking) => {
+    try {
+      const formData = new FormData();
+      formData.append('method', 'getCustomerBilling');
+      formData.append('json', JSON.stringify({ reference_no: booking.reference_no }));
+
+      const res = await axios.post(APIConn, formData);
+      if (res.data && res.data.success) {
+        setBillingData(res.data.billing_data || []);
+      } else {
+        setBillingData([]);
+      }
+    } catch (err) {
+      console.error('Error fetching billing data:', err);
+      setBillingData([]);
+    }
   };
 
   const handleUpdateStatus = async () => {
@@ -743,9 +805,19 @@ function AdminBookingList() {
       console.log('Customer has outstanding payments, navigating to Invoice');
       showPaymentValidationModal(booking);
     } else {
-      // Customer is fully paid - proceed with check-out
-      console.log('Customer is fully paid, proceeding with check-out');
-      await proceedWithCheckOut(booking);
+      // Customer is fully paid - check if they have a complete invoice
+      console.log('Customer is fully paid, checking invoice status...');
+      const hasCompleteInvoice = await checkInvoiceStatus(booking);
+      
+      if (hasCompleteInvoice) {
+        // Customer has complete invoice - proceed with check-out
+        console.log('Customer has complete invoice, proceeding with check-out');
+        await proceedWithCheckOut(booking);
+      } else {
+        // Customer is fully paid but no complete invoice - navigate to Invoice
+        console.log('Customer is fully paid but no complete invoice, navigating to Invoice');
+        showPaymentValidationModal(booking);
+      }
     }
   };
 
@@ -1043,7 +1115,7 @@ function AdminBookingList() {
                              sortBy === 'booking_checkout_dateandtime' ? 'Check-out Date' :
                              sortBy === 'customer_name' ? 'Customer Name' :
                              sortBy === 'reference_no' ? 'Reference No' :
-                             sortBy === 'total_amount' ? 'Total Amount' : sortBy}
+                             sortBy === 'total_amount' ? 'Balance' : sortBy}
                   ({sortOrder === 'asc' ? (
                     <>
                       <ClockArrowUp className="w-3 h-3" />
@@ -1128,7 +1200,7 @@ function AdminBookingList() {
                     <SelectItem value="booking_checkout_dateandtime">Check-out Date</SelectItem>
                     <SelectItem value="customer_name">Customer Name</SelectItem>
                     <SelectItem value="reference_no">Reference No</SelectItem>
-                    <SelectItem value="total_amount">Total Amount</SelectItem>
+                    <SelectItem value="total_amount">Balance</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1208,7 +1280,7 @@ function AdminBookingList() {
                                                  sortBy === 'booking_checkout_dateandtime' ? 'Check-out Date' :
                                                  sortBy === 'customer_name' ? 'Customer Name' :
                                                  sortBy === 'reference_no' ? 'Reference No' :
-                                                 sortBy === 'total_amount' ? 'Total Amount' : sortBy} 
+                                                 sortBy === 'total_amount' ? 'Balance' : sortBy} 
                         ({sortOrder === 'asc' ? (
                           <>
                             <ClockArrowUp className="w-3 h-3" />
@@ -1298,8 +1370,8 @@ function AdminBookingList() {
                           onClick={() => setSortBy('total_amount')}
                           className="flex items-center justify-center gap-1 hover:text-blue-600 transition-colors text-xs sm:text-sm"
                         >
-                          <span className="hidden sm:inline">Amount</span>
-                          <span className="sm:hidden">Amount</span>
+                          <span className="hidden sm:inline">Balance</span>
+                          <span className="sm:hidden">Balance</span>
                           {sortBy === 'total_amount' && (
                             sortOrder === 'asc' ? (
                               <ClockArrowUp className="w-2 h-2 sm:w-3 sm:h-3 text-blue-600" />
@@ -1357,14 +1429,24 @@ function AdminBookingList() {
                         </TableCell>
                         <TableCell className="text-gray-700 dark:text-gray-300 text-center py-3">
                           <div className="space-y-1">
-                            <div className="font-semibold text-green-600 dark:text-green-400 text-xs">
-                              {NumberFormatter.formatCurrency(b.total_amount || 0)}
+                            <div className={`font-semibold text-xs ${
+                              (() => {
+                                const totalAmount = parseFloat(b.total_amount) || 0;
+                                const downpayment = parseFloat(b.downpayment) || 0;
+                                const remaining = Math.max(0, totalAmount - downpayment);
+                                return remaining === 0 ? "text-green-600 dark:text-green-400" : "text-orange-600 dark:text-orange-400";
+                              })()
+                            }`}>
+                              {(() => {
+                                const totalAmount = parseFloat(b.total_amount) || 0;
+                                const downpayment = parseFloat(b.downpayment) || 0;
+                                const remaining = Math.max(0, totalAmount - downpayment);
+                                return remaining === 0 ? "Fully Paid" : NumberFormatter.formatCurrency(remaining);
+                              })()}
                             </div>
-                            {b.downpayment && (
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Down: {NumberFormatter.formatCurrency(b.downpayment)}
-                              </div>
-                            )}
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              Total: {NumberFormatter.formatCurrency(b.total_amount || 0)}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-center py-3">
@@ -1587,15 +1669,150 @@ function AdminBookingList() {
                   </div>
                 )}
 
+                {/* Invoice and Billing Information */}
+                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Invoice & Billing Information</h3>
+                  
+                  {(() => {
+                    const hasInvoice = invoiceData !== null;
+                    const hasBills = billingData && billingData.length > 0;
+                    
+                    if (hasInvoice) {
+                      // Customer has an invoice
+                      return (
+                        <div className="space-y-3">
+                          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                                Invoice Present
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-600 dark:text-gray-400">Invoice ID:</span>
+                                <p className="font-medium text-gray-900 dark:text-white">#{invoiceData.invoice_id}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                                <p className={`font-medium ${invoiceData.invoice_status_id === 1 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                                  {invoiceData.invoice_status_id === 1 ? 'Complete' : 'Incomplete'}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-gray-600 dark:text-gray-400">Date:</span>
+                                <p className="font-medium text-gray-900 dark:text-white">{formatDateTime(invoiceData.invoice_date + ' ' + invoiceData.invoice_time)}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-600 dark:text-gray-400">Total Amount:</span>
+                                <p className="font-medium text-gray-900 dark:text-white">{NumberFormatter.formatCurrency(invoiceData.invoice_total_amount)}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    } else if (hasBills) {
+                      // Customer has no invoice but has bills
+                      const totalBillAmount = billingData.reduce((sum, bill) => sum + (parseFloat(bill.billing_total_amount) || 0), 0);
+                      const totalPaidAmount = billingData.reduce((sum, bill) => sum + (parseFloat(bill.billing_downpayment) || 0), 0);
+                      const totalBalance = totalBillAmount - totalPaidAmount;
+                      
+                      return (
+                        <div className="space-y-3">
+                          <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                              <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                                No Invoice Present - Bills Available
+                              </span>
+                            </div>
+                            <p className="text-xs text-orange-600 dark:text-orange-400 mb-3">
+                              Customer has bills but no invoice has been generated yet.
+                            </p>
+                            
+                            {/* Bill Summary */}
+                            <div className="bg-white dark:bg-gray-800 rounded border border-orange-200 dark:border-orange-700 p-3">
+                              <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Total Bill Amount:</span>
+                                  <p className="font-medium text-gray-900 dark:text-white">{NumberFormatter.formatCurrency(totalBillAmount)}</p>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Total Paid:</span>
+                                  <p className="font-medium text-green-600 dark:text-green-400">{NumberFormatter.formatCurrency(totalPaidAmount)}</p>
+                                </div>
+                              </div>
+                              <div className="border-t border-gray-200 dark:border-gray-600 pt-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Remaining Balance:</span>
+                                  <span className="font-bold text-lg text-orange-600 dark:text-orange-400">
+                                    {NumberFormatter.formatCurrency(totalBalance)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Individual Bills */}
+                            <div className="mt-3">
+                              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Individual Bills ({billingData.length}):
+                              </div>
+                              <div className="space-y-2">
+                                {billingData.map((bill, index) => (
+                                  <div key={index} className="bg-white dark:bg-gray-800 p-2 rounded border text-xs">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-gray-600 dark:text-gray-400">Bill #{bill.billing_id}</span>
+                                      <span className="font-medium text-gray-900 dark:text-white">
+                                        {NumberFormatter.formatCurrency(bill.billing_total_amount)}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center mt-1">
+                                      <span className="text-gray-500 dark:text-gray-400">Paid: {NumberFormatter.formatCurrency(bill.billing_downpayment)}</span>
+                                      <span className={`font-medium ${bill.billing_balance > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'}`}>
+                                        Balance: {NumberFormatter.formatCurrency(bill.billing_balance)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Customer has no invoice and no bills
+                      return (
+                        <div className="bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                              No Invoice or Bills Present
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            This customer has no bills or invoices generated yet.
+                          </p>
+                        </div>
+                      );
+                    }
+                  })()}
+                </div>
+
                 {/* Action Buttons */}
                 <div className="flex justify-end gap-3 pt-4 border-t flex-wrap">
-                  <Button variant="outline" onClick={() => setShowCustomerDetails(false)}>
+                  <Button variant="outline" onClick={() => {
+                    setShowCustomerDetails(false);
+                    setInvoiceData(null);
+                    setBillingData([]);
+                  }}>
                     Close
                   </Button>
                   <Button
                     onClick={() => {
                       handleStatusChange(selectedBooking);
                       setShowCustomerDetails(false);
+                      setInvoiceData(null);
+                      setBillingData([]);
                     }}
                     className="bg-orange-600 hover:bg-orange-700"
                   >

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button } from '../ui/button'
-import { MenuSquareIcon, Home, User, BedIcon, Calendar1Icon, LogOutIcon, PillBottleIcon, HistoryIcon, UserPlusIcon, CalendarCheckIcon, CreditCardIcon } from "lucide-react"
+import { MenuSquareIcon, Home, User, BedIcon, Calendar1Icon, LogOutIcon, PillBottleIcon, HistoryIcon, UserPlusIcon, CalendarCheckIcon, CreditCardIcon, List, Receipt } from "lucide-react"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet"
 import { ScrollArea } from '../ui/scroll-area'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible'
@@ -32,6 +32,14 @@ function FDSidebar() {
                 <Button variant="ghost" className="w-full justify-start gap-2">
                   <Home className="w-4 h-4" />
                   Dashboard
+                </Button>
+              </Link>
+
+              {/* Booking List */}
+              <Link to="/frontdesk/booking-list" className="block w-full">
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <List className="w-4 h-4" />
+                  Booking List
                 </Button>
               </Link>
 
@@ -92,10 +100,10 @@ function FDSidebar() {
               </Link>
 
               {/* Transaction History */}
-              <Link to="/frontdesk/transactions" className="block w-full">
+              <Link to="/frontdesk/transaction-history" className="block w-full">
                 <Button variant="ghost" className="w-full justify-start gap-2">
                   <HistoryIcon className="w-4 h-4" />
-                  Transactions
+                  Transaction History
                 </Button>
               </Link>
             </div>
