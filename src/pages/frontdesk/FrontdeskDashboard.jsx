@@ -2,6 +2,7 @@ import React from 'react'
 import FrontHeader from '@/pages/frontdesk/comps/FrontHeader'
 import axios from 'axios'
 import { useState, useEffect } from 'react'
+import { DollarSign as DollarSignIcon } from 'lucide-react'
 
 // ShadCN
 import { toast } from 'sonner';
@@ -31,7 +32,7 @@ import {
   Ellipsis, 
   TrendingUp, 
   Calendar, 
-  DollarSign, 
+  /* DollarSign removed */
   User, 
   Building,
   Clock,
@@ -449,3 +450,5 @@ function FrontdeskDashboard() {
 }
 
 export default FrontdeskDashboard
+
+const DollarSign = ({ className = "" }) => <span className={className}>₱</span>

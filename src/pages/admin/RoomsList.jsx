@@ -653,8 +653,9 @@ function AdminRoomsList() {
         onOpenChange={setShowAdvancedFilters}
         onApplyFilters={handleApplyAdvancedFilters}
       />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="p-6 max-w-7xl mx-auto">
+      {/* Main container with responsive margin for fixed sidebar */}
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 md:ml-72">
+        <div className="p-4 md:p-6 max-w-7xl mx-auto">
           {/* Header Section */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -783,7 +784,7 @@ function AdminRoomsList() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "space-y-4"}>
                   {filteredRoomTypes.map((roomType, index) => (
                     <Card 
                       key={index} 

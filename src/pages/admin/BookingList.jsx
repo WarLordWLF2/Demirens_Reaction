@@ -63,6 +63,18 @@ function AdminBookingList() {
   const [invoiceData, setInvoiceData] = useState(null);
   const [billingData, setBillingData] = useState([]);
 
+  // Auto-checkout trigger to ensure past-due pending bookings are updated before listing
+  const triggerAutoCheckoutAndSeedBillings = useCallback(async () => {
+    try {
+      const formData = new FormData();
+      formData.append('method', 'autoCheckoutAndSeedBillings');
+      const res = await axios.post(APIConn, formData);
+      console.log('Auto checkout/billing seed result:', res?.data);
+    } catch (err) {
+      console.error('Error triggering autoCheckoutAndSeedBillings:', err);
+    }
+  }, [APIConn]);
+
   const getAllStatus = useCallback(async () => {
     const formData = new FormData();
     formData.append('method', 'getAllStatus');
@@ -133,6 +145,7 @@ function AdminBookingList() {
       // Ensure we always set an array, even if the response is unexpected
       if (Array.isArray(res.data)) {
         setBookings(res.data);
+        console.log('Enhanced bookings loaded:', res.data);
       } else if (res.data === 0 || res.data === null || res.data === undefined) {
         setBookings([]);
       } else {
@@ -150,10 +163,16 @@ function AdminBookingList() {
   }, [APIConn]);
 
   useEffect(() => {
-    getBookings();
+    // First trigger auto checkout/billing seeding, then fetch bookings to reflect updates
+    triggerAutoCheckoutAndSeedBillings()
+      .catch(() => {})
+      .finally(() => {
+        getBookings();
+      });
+
     getAllStatus();
     fetchRoomData();
-  }, [getBookings, getAllStatus, fetchRoomData]);
+  }, [getBookings, getAllStatus, fetchRoomData, triggerAutoCheckoutAndSeedBillings]);
 
   // Filter bookings based on search term and filters
   useEffect(() => {
@@ -1388,8 +1407,10 @@ function AdminBookingList() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredBookings.map((b, i) => (
-                      <TableRow key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-600">
+                    {filteredBookings.flatMap((b, i) => {
+                      const roomGroups = getRoomTypeGroupsFromBooking(b);
+                      return roomGroups.map((group, gi) => (
+                      <TableRow key={`${b.booking_id || i}-${group.roomType}-${gi}`} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-600">
                         <TableCell className="font-mono text-sm text-gray-900 dark:text-white text-center py-3">
                           <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">
                             {b.reference_no || '—'}
@@ -1409,11 +1430,14 @@ function AdminBookingList() {
                           </div>
                         </TableCell>
                         <TableCell className="text-gray-700 dark:text-gray-300 text-center py-3">
-                          <div className={`text-sm font-medium px-2 py-1 rounded-full ${getRoomTypeDisplay(b) === 'More Rooms...'
+                          <div className={`text-sm font-medium px-2 py-1 rounded-full ${group.count > 1
                             ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300'
                             : 'bg-[#34699a]/10 dark:bg-[#34699a]/20 text-[#34699a] dark:text-[#34699a]'
                             }`}>
-                            {getRoomTypeDisplay(b)}
+                            {group.roomType}
+                            {group.count > 1 && (
+                              <span className="ml-2">×{group.count}</span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-gray-700 dark:text-gray-300 text-center py-3">
@@ -1438,7 +1462,13 @@ function AdminBookingList() {
                               {(() => {
                                 // ONLY use balance from database
                                 const balance = parseFloat(b.balance);
-                                return balance === 0 ? "Fully Paid" : NumberFormatter.formatCurrency(balance);
+                                if (balance === 0) {
+                                  return "Fully Paid";
+                                } else if (balance > 0) {
+                                  return NumberFormatter.formatCurrency(balance);
+                                } else {
+                                  return "₱0";
+                                }
                               })()}
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -1491,7 +1521,8 @@ function AdminBookingList() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      ));
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -1588,7 +1619,13 @@ function AdminBookingList() {
                           {(() => {
                             // ONLY use balance from database
                             const balance = parseFloat(selectedBooking.balance);
-                            return balance === 0 ? "Fully Paid" : NumberFormatter.formatCurrencyDecimals(balance, 0, { showCurrency: false });
+                            if (balance === 0) {
+                              return "Fully Paid";
+                            } else if (balance > 0) {
+                              return NumberFormatter.formatCurrencyDecimals(balance, 0, { showCurrency: false });
+                            } else {
+                              return "₱0";
+                            }
                           })()}
                         </p>
                     </div>

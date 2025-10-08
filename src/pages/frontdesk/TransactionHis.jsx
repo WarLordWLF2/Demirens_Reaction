@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import FrontHeader from '@/pages/frontdesk/comps/FrontHeader'
 import axios from 'axios'
 import { toast } from 'sonner'
+import { DollarSign as DollarSignIcon } from 'lucide-react'
 
 // ShadCN Components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,8 +28,7 @@ import {
   Coffee,
   ChevronLeft,
   ChevronRight,
-  Activity,
-  DollarSign
+  Activity
 } from "lucide-react"
 
 // Utils
@@ -528,4 +528,7 @@ function FrontdeskTransactionHis() {
 }
 
 export default FrontdeskTransactionHis
+
+
+const DollarSign = ({ className = "" }) => <span className={className}>₱</span>
 

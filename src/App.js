@@ -25,7 +25,7 @@ import AdminNewBook from './pages/admin/WalkIn_Folder/AddWalkIn';
 import Landingpage from './pages/Landingpage';
 import Billings from './pages/admin/Billings';
 import CreateInvoice from './pages/admin/Invoice';
-import EmployeeManagement from './pages/admin/EmployeeManagement';
+import EmployeeList from './pages/admin/EmployeeList';
 
 // Online
 import OnlineReqList from './pages/admin/Online_Folder/OnlineReqList';
@@ -217,9 +217,9 @@ function App() {
                     <AdminRoomtype />
                   </AdminRouteGuard>
                 } />
-                <Route path="/admin/employeemanagement" element={
+                <Route path="/admin/employeelist" element={
                   <AdminRouteGuard>
-                    <EmployeeManagement />
+                    <EmployeeList />
                   </AdminRouteGuard>
                 } />
 

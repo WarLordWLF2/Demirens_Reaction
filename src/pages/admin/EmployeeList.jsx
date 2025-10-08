@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Search, Edit, Trash2, Users, Eye, EyeOff } from "lucide-react";
+import { Plus, Search, Edit, Users, Eye, EyeOff } from "lucide-react";
 import AdminHeader from "./components/AdminHeader";
 import { NumberFormatter } from './Function_Files/NumberFormatter';
 import { DateFormatter } from './Function_Files/DateFormatter';
@@ -34,9 +34,8 @@ const employeeSchema = z.object({
     .max(20, "Username must be less than 20 characters")
     .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
   employee_phone: z.string()
-    .min(10, "Phone number must be at least 10 digits")
-    .max(15, "Phone number must be less than 15 digits")
-    .regex(/^[0-9+\-\s()]+$/, "Phone number can only contain numbers, +, -, spaces, and parentheses"),
+    .length(11, "Phone number must be exactly 11 digits")
+    .regex(/^\d{11}$/, "Phone number must be exactly 11 digits"),
   employee_email: z.string()
     .email("Invalid email address")
     .max(100, "Email must be less than 100 characters")
@@ -61,9 +60,6 @@ const employeeSchema = z.object({
   employee_gender: z.string()
     .min(1, "Gender is required")
     .refine((val) => ["Male", "Female", "Other"].includes(val), "Please select a valid gender"),
-  employee_user_level_id: z.string()
-    .min(1, "User level is required")
-    .refine((val) => ["1", "2"].includes(val), "Please select a valid user level")
 });
 
 function EmployeeManagement() {
@@ -77,6 +73,7 @@ function EmployeeManagement() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingEmployeeData, setPendingEmployeeData] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('active');
 
   const form = useForm({
     resolver: zodResolver(employeeSchema),
@@ -89,8 +86,7 @@ function EmployeeManagement() {
       employee_password: "",
       employee_address: "",
       employee_birthdate: "",
-      employee_gender: "",
-      employee_user_level_id: ""
+      employee_gender: ""
     }
   });
 
@@ -150,6 +146,8 @@ function EmployeeManagement() {
     
     if (editingEmployee) {
       payload.employee_id = editingEmployee.employee_id;
+      // Preserve existing user level for updates (no UI control)
+      payload.employee_user_level_id = editingEmployee.employee_user_level_id?.toString() || "2";
       // Remove password if empty (for updates)
       if (!data.employee_password) {
         delete payload.employee_password;
@@ -161,10 +159,14 @@ function EmployeeManagement() {
         toast.error('Password is required for new employees');
         return;
       }
+      // Ensure new employees are always Front-Desk (level 2)
+      payload.employee_user_level_id = "2";
+      // Default status to Active (1)
+      payload.employee_status = 1;
     }
 
     // Additional data validation
-    const userLevel = userLevels.find(level => level.userlevel_id.toString() === data.employee_user_level_id);
+    const userLevel = userLevels.find(level => level.userlevel_id.toString() === payload.employee_user_level_id);
     payload.user_level_name = userLevel?.userlevel_name || 'Unknown';
     
     console.log('Final Payload:', payload);
@@ -233,8 +235,7 @@ function EmployeeManagement() {
       employee_password: "",
       employee_address: employee.employee_address,
       employee_birthdate: employee.employee_birthdate,
-      employee_gender: employee.employee_gender,
-      employee_user_level_id: employee.employee_user_level_id.toString()
+      employee_gender: employee.employee_gender
     });
     setIsDialogOpen(true);
   };
@@ -262,14 +263,48 @@ function EmployeeManagement() {
     }
   };
 
-  // Filter employees based on search term
-  const filteredEmployees = employees.filter(employee =>
-    employee.employee_fname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.employee_lname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.employee_username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.employee_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.userlevel_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Toggle Active/Inactive status
+  const handleToggleStatus = async (employee) => {
+    const isActive = employee.employee_status === 1 || employee.employee_status === 'Active' || employee.employee_status === true;
+    const targetStatus = isActive ? 0 : 1;
+    const actionText = isActive ? 'deactivate' : 'activate';
+
+    if (!window.confirm(`Are you sure you want to ${actionText} ${employee.employee_fname} ${employee.employee_lname}?`)) {
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('method', 'changeEmployeeStatus');
+      formData.append('json', JSON.stringify({ employee_id: employee.employee_id, employee_status: targetStatus }));
+
+      const response = await axios.post(APIConn, formData);
+
+      if (response.data.status === 'success') {
+        toast.success(response.data.message || (targetStatus === 1 ? 'Employee activated' : 'Employee deactivated'));
+        fetchEmployees();
+      } else {
+        toast.error(response.data.message || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating employee status:', error);
+      toast.error('Error updating employee status');
+    }
+  };
+
+  // Filter employees based on search term and status filter
+  const filteredEmployees = employees
+    .filter(employee =>
+      employee.employee_fname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.employee_lname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.employee_username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.employee_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.userlevel_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .filter(employee => {
+      const isActive = employee.employee_status === 1 || employee.employee_status === 'Active' || employee.employee_status === true;
+      return statusFilter === 'active' ? isActive : true;
+    });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -296,7 +331,17 @@ function EmployeeManagement() {
                   className="bg-[#34699a] hover:bg-[#2a5580] text-white"
                   onClick={() => {
                     setEditingEmployee(null);
-                    form.reset();
+                    form.reset({
+                      employee_fname: "",
+                      employee_lname: "",
+                      employee_username: "",
+                      employee_phone: "",
+                      employee_email: "",
+                      employee_password: "",
+                      employee_address: "",
+                      employee_birthdate: "",
+                      employee_gender: ""
+                    });
                   }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -389,12 +434,12 @@ function EmployeeManagement() {
                             <FormLabel>Phone Number *</FormLabel>
                             <FormControl>
                               <Input 
-                                placeholder="Enter phone number (10-15 digits)" 
+                                placeholder="Enter phone number (11 digits)" 
                                 {...field}
-                                maxLength={15}
-                                pattern="[0-9+\-\s()]+"
+                                maxLength={11}
+                                pattern="[0-9]{11}"
                                 onInput={(e) => {
-                                  e.target.value = e.target.value.replace(/[^0-9+\-\s()]/g, '');
+                                  e.target.value = e.target.value.replace(/\D/g, '').slice(0, 11);
                                 }}
                               />
                             </FormControl>
@@ -525,30 +570,7 @@ function EmployeeManagement() {
                       />
                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="employee_user_level_id"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>User Level *</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select user level" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {userLevels.map((level) => (
-                                <SelectItem key={level.userlevel_id} value={level.userlevel_id.toString()}>
-                                  {level.userlevel_name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* Removed user level dropdown - default to Front-Desk (level 2) for new employees */}
 
                     <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
                       <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
@@ -646,6 +668,17 @@ function EmployeeManagement() {
                 className="pl-8 w-full"
               />
             </div>
+            <div className="w-full sm:w-[220px]">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Filter status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active only</SelectItem>
+                  <SelectItem value="all">Include inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Employees Table */}
@@ -689,9 +722,15 @@ function EmployeeManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={employee.employee_status === 'Active' ? 'default' : 'destructive'}>
-                            {employee.employee_status}
-                          </Badge>
+                          {(() => {
+                            const isActive = employee.employee_status === 1 || employee.employee_status === 'Active' || employee.employee_status === true;
+                            const label = isActive ? 'Active' : 'Inactive';
+                            return (
+                              <Badge variant={isActive ? 'default' : 'destructive'}>
+                                {label}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 sm:gap-2">
@@ -704,15 +743,24 @@ function EmployeeManagement() {
                               <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                               <span className="hidden sm:inline ml-1">Edit</span>
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDelete(employee)}
-                              className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3 text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                              <span className="hidden sm:inline ml-1">Delete</span>
-                            </Button>
+                          {(() => {
+                            const isActive = employee.employee_status === 1 || employee.employee_status === 'Active' || employee.employee_status === true;
+                            return (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleStatus(employee)}
+                                className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
+                              >
+                                {isActive ? (
+                                  <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" />
+                                ) : (
+                                  <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                                )}
+                                <span className="hidden sm:inline ml-1">{isActive ? 'Deactivate' : 'Activate'}</span>
+                              </Button>
+                            );
+                          })()}
                           </div>
                         </TableCell>
                       </TableRow>
