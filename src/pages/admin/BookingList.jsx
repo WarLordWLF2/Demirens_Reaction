@@ -63,18 +63,6 @@ function AdminBookingList() {
   const [invoiceData, setInvoiceData] = useState(null);
   const [billingData, setBillingData] = useState([]);
 
-  // Auto-checkout trigger to ensure past-due pending bookings are updated before listing
-  const triggerAutoCheckoutAndSeedBillings = useCallback(async () => {
-    try {
-      const formData = new FormData();
-      formData.append('method', 'autoCheckoutAndSeedBillings');
-      const res = await axios.post(APIConn, formData);
-      console.log('Auto checkout/billing seed result:', res?.data);
-    } catch (err) {
-      console.error('Error triggering autoCheckoutAndSeedBillings:', err);
-    }
-  }, [APIConn]);
-
   const getAllStatus = useCallback(async () => {
     const formData = new FormData();
     formData.append('method', 'getAllStatus');
@@ -139,7 +127,7 @@ function AdminBookingList() {
     try {
       setIsLoading(true);
       const formData = new FormData();
-      formData.append('method', 'viewBookings');
+      formData.append('method', 'viewBookingsEnhanced');
       const res = await axios.post(APIConn, formData);
 
       // Ensure we always set an array, even if the response is unexpected
@@ -163,16 +151,10 @@ function AdminBookingList() {
   }, [APIConn]);
 
   useEffect(() => {
-    // First trigger auto checkout/billing seeding, then fetch bookings to reflect updates
-    triggerAutoCheckoutAndSeedBillings()
-      .catch(() => {})
-      .finally(() => {
-        getBookings();
-      });
-
+    getBookings();
     getAllStatus();
     fetchRoomData();
-  }, [getBookings, getAllStatus, fetchRoomData, triggerAutoCheckoutAndSeedBillings]);
+  }, [getBookings, getAllStatus, fetchRoomData]);
 
   // Filter bookings based on search term and filters
   useEffect(() => {
@@ -1407,10 +1389,8 @@ function AdminBookingList() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredBookings.flatMap((b, i) => {
-                      const roomGroups = getRoomTypeGroupsFromBooking(b);
-                      return roomGroups.map((group, gi) => (
-                      <TableRow key={`${b.booking_id || i}-${group.roomType}-${gi}`} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-600">
+                    {filteredBookings.map((b, i) => (
+                      <TableRow key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-600">
                         <TableCell className="font-mono text-sm text-gray-900 dark:text-white text-center py-3">
                           <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">
                             {b.reference_no || '—'}
@@ -1430,14 +1410,11 @@ function AdminBookingList() {
                           </div>
                         </TableCell>
                         <TableCell className="text-gray-700 dark:text-gray-300 text-center py-3">
-                          <div className={`text-sm font-medium px-2 py-1 rounded-full ${group.count > 1
+                          <div className={`text-sm font-medium px-2 py-1 rounded-full ${getRoomTypeDisplay(b) === 'More Rooms...'
                             ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300'
                             : 'bg-[#34699a]/10 dark:bg-[#34699a]/20 text-[#34699a] dark:text-[#34699a]'
                             }`}>
-                            {group.roomType}
-                            {group.count > 1 && (
-                              <span className="ml-2">×{group.count}</span>
-                            )}
+                            {getRoomTypeDisplay(b)}
                           </div>
                         </TableCell>
                         <TableCell className="text-gray-700 dark:text-gray-300 text-center py-3">
@@ -1521,8 +1498,7 @@ function AdminBookingList() {
                           </div>
                         </TableCell>
                       </TableRow>
-                      ));
-                    })}
+                    ))}
                   </TableBody>
                 </Table>
               </div>
