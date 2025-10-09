@@ -127,7 +127,7 @@ function AdminProfile() {
       const userType = localStorage.getItem('userType');
       
       if (!userId || userType !== 'admin') {
-        toast.error('Admin access required');
+  toast.error('Employee or Admin access required');
         return;
       }
 
@@ -205,6 +205,16 @@ function AdminProfile() {
       }
 
       const userId = localStorage.getItem('userId');
+      const userType = (localStorage.getItem('userType') || '').toLowerCase().replace(/[\s_-]/g, '')
+      const userLevel = (localStorage.getItem('userLevel') || '').toLowerCase().replace(/[\s_-]/g, '')
+      const typeAllowed = ['admin','employee','frontdesk'].includes(userType)
+      const levelAllowed = ['admin','frontdesk'].includes(userLevel)
+
+      if (!userId || (!typeAllowed && !levelAllowed)) {
+        toast.error('Employee or Admin access required');
+        return;
+      }
+
       const updateData = {
         employee_id: userId,
         employee_fname: editData.employee_fname,

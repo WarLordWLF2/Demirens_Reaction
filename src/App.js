@@ -45,6 +45,7 @@ import { WalkInProvider } from './pages/admin/WalkIn_Folder/WalkInContext';
 
 // Authentication
 import Login from './pages/UserAuth_Folder/Login';
+import EmployeeLogin from './pages/UserAuth_Folder/Login_Employees';
 import Register from './pages/UserAuth_Folder/Register';
 import OTPAuth from './pages/UserAuth_Folder/OTP_Auth';
 import ForgotPassword from './pages/UserAuth_Folder/ForgotPassword';
@@ -117,6 +118,7 @@ function App() {
 
                 {/* Auth Pages */}
                 <Route path="/login" element={<Login />} />
+                <Route path="/employee/login" element={<EmployeeLogin />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify" element={<OTPAuth />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />

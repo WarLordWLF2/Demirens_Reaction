@@ -19,7 +19,7 @@ import axios from 'axios';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeftCircleIcon, HomeIcon } from 'lucide-react';
 
-function Login() {
+function EmployeeLogin() {
     const { useEffect, useState } = React;
     const [isCaptchaValid, setIsCaptchaValid] = useState(false);
     const [captchaCharacters, setCaptchaCharacters] = useState([]);
@@ -82,13 +82,13 @@ function Login() {
                 toast.error("Invalid CAPTCHA");
                 return;
             }
-            const url = localStorage.getItem('url') + "customer.php";
+            const url = localStorage.getItem('url') + "admin.php";
             const jsonData = { username: values.email, password: values.password };
             console.log("=== LOGIN ATTEMPT ===");
             console.log("Sending login data:", jsonData);
             console.log("API URL:", url);
             const formData = new FormData();
-            formData.append("operation", "login");
+            formData.append("method", "login");
             formData.append("json", JSON.stringify(jsonData));
             const res = await axios.post(url, formData);
             console.log("Full API Response:", res);
@@ -120,7 +120,7 @@ function Login() {
                     setTimeout(() => {
                         navigateTo("/customer");
                     }, 1500);
-                } else if (userType === "Front-Desk") {
+                } else if (userType === "front-desk") {
                     toast.success("Successfully logged in as Employee");
                     console.log("=== EMPLOYEE LOGIN INFO ===");
                     console.log("Employee ID:", user.employee_id);
@@ -371,18 +371,7 @@ function Login() {
                                 Sign In
                             </Button>
 
-                            {/* Sign Up Section */}
-                            <div className="text-center pt-4 border-t border-white/10">
-                                <p className="text-white/70 text-sm">
-                                    Don't have an account?{' '}
-                                    <Link
-                                        to="/register"
-                                        className="text-blue-300 hover:text-blue-200 font-semibold transition-colors duration-200 hover:underline"
-                                    >
-                                        Sign up here
-                                    </Link>
-                                </p>
-                            </div>
+                            
                         </form>
                     </Form>
                 </CardContent>
@@ -394,4 +383,4 @@ function Login() {
 
 
 
-export default Login
+export default EmployeeLogin
