@@ -61,21 +61,6 @@ import CustomerMain from './pages/customer/CustomerMain';
 import { Toaster } from 'sonner';
 import { CheckCircle2Icon, XCircleIcon } from 'lucide-react';
 
-// Frontdesk Side
-import CustomerRoomView from './pages/customer/CustomerRoomView';
-import RoomSearch from './pages/customer/RoomSearch';
-import BookingChargesMaster from './pages/frontdesk/BookingChargesMaster';
-import BookingRequestList from './pages/frontdesk/BookingListRequest';
-import BookingChargesList from './pages/frontdesk/BookingChargesList';
-import BookingCreateInvoice from './pages/frontdesk/BookingCreateInvoice';
-import BookingDisplayInvoiceSample from './pages/frontdesk/BookingDisplayInvoiceSample';
-
-// New Frontdesk Pages
-import FrontdeskDashboard from './pages/frontdesk/FrontdeskDashboard';
-import FrontdeskBookingList from './pages/frontdesk/BookingList';
-import FrontdeskTransactionHis from './pages/frontdesk/TransactionHis';
-import FrontdeskReservation from './pages/frontdesk/FrontdeskResvation';
-
 
 function App() {
 
@@ -274,31 +259,14 @@ function App() {
                     <Confirmation />
                   </AdminRouteGuard>
                 } />
-
-                {/* Frontdesk */}
-                <Route path="/frontdesk/dashboard" element={<FrontdeskDashboard />} />
-                <Route path="/frontdesk/booking-list" element={<FrontdeskBookingList />} />
-                <Route path="/frontdesk/transaction-history" element={<FrontdeskTransactionHis />} />
-                <Route path="/frontdesk/reservations" element={<FrontdeskReservation />} />
                 
-                {/* Legacy Frontdesk Routes */}
-                <Route path="/BookingChargesMaster" element={<BookingChargesMaster />} />
-                <Route path="/BookingRequestList" element={<BookingRequestList />} />
-                <Route path="/BookingChargesList" element={<BookingChargesList />} />
-                <Route path="/BookingCreateInvoice" element={<BookingCreateInvoice />} />
-                <Route path="/BookingDisplayInvoiceSample" element={<BookingDisplayInvoiceSample />} />
-
-
                 {/* Customer Route */}
                 <Route path="/customer/about" element={<CustomerAbout />} />
                 <Route path="/customer/bookings" element={<CustomerBooking />} />
                 <Route path="/customer/rooms" element={<CustomerRooms />} />
                 <Route path="/customer/gallery" element={<CustomerGallery />} />
                 <Route path="/customer/restaurant" element={<CustomerRestaurant />} />
-                <Route path="/customer/roomsearch" element={<RoomSearch />} />
-                <Route path="/customer/roomview" element={<CustomerRoomView />} />
                 <Route path="/customer" element={<CustomerMain />} />
-
 
 
               </Routes>

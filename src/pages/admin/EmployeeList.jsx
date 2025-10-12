@@ -309,7 +309,7 @@ function EmployeeManagement() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <AdminHeader />
-      <div className="ml-72 p-4 sm:p-6 space-y-6 max-w-7xl">
+      <div className="ml-0 lg:ml-72 px-2 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-6 max-w-7xl">
       
       <Card>
         <CardHeader>
@@ -319,7 +319,7 @@ function EmployeeManagement() {
                 <Users className="h-6 w-6 text-[#34699a] dark:text-[#34699a]" />
               </div>
               <div>
-                <CardTitle className="text-xl sm:text-2xl font-bold">Employee Management</CardTitle>
+                <CardTitle className="text-xl sm:text-2xl font-bold">Employee List</CardTitle>
                 <p className="text-muted-foreground mt-1 text-sm sm:text-base">
                   Manage employees and administrators
                 </p>

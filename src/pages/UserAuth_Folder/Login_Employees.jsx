@@ -111,15 +111,9 @@ function EmployeeLogin() {
                 console.log("User Data:", user);
 
                 if (userType === "customer") {
-                    toast.success("Successfully logged in as Customer");
-                    localStorage.setItem("userId", user.customers_id);
-                    localStorage.setItem("customerOnlineId", user.customers_online_id);
-                    localStorage.setItem("fname", user.customers_fname);
-                    localStorage.setItem("lname", user.customers_lname);
-                    localStorage.setItem("userType", "customer");
-                    setTimeout(() => {
-                        navigateTo("/customer");
-                    }, 1500);
+                    // Block customer login on this page
+                    toast.error("Customer login is not allowed here. Please use the Customer portal.");
+                    return;
                 } else if (userType === "front-desk") {
                     toast.success("Successfully logged in as Employee");
                     console.log("=== EMPLOYEE LOGIN INFO ===");
@@ -223,7 +217,7 @@ function EmployeeLogin() {
                         </div>
                         <div className="mb-3">
                             <h1 className="text-xl sm:text-2xl font-bold text-white mb-1">
-                                Welcome Back
+                                Welcome Back, Employee!
                             </h1>
                             <div className="w-12 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-500 mx-auto mt-2 rounded-full"></div>
                         </div>

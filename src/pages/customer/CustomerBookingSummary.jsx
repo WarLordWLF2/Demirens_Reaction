@@ -2,7 +2,7 @@ import { Card, CardContent, CardFooter, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCaption, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import React, { useEffect } from 'react'
 import { useState } from 'react'
-import { Book, Calendar, Users, DollarSign as DollarSignIcon, SmileIcon, Clock } from 'lucide-react';
+import { Book, Calendar, Users, DollarSign, SmileIcon, Clock } from 'lucide-react';
 import RequestAmenities from './modals/sheets/RequestAmenities';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -46,10 +46,6 @@ function CustomerBookingSummary() {
   useEffect(() => {
     getBookingSummary();
   }, [])
-
-
-
-
   return (
 
     <div className="flex flex-col w-full max-w-[1200px] mx-auto px-4 sm:px-6">
@@ -138,5 +134,3 @@ function CustomerBookingSummary() {
 }
 
 export default CustomerBookingSummary
-
-const DollarSign = ({ className = "" }) => <span className={className}>₱</span>

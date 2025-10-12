@@ -136,7 +136,8 @@ const WalkInBookingModal = ({
           ...data,
           totalAmount: bookingInfo.totalAmount,
           nights: bookingInfo.nights
-        }
+        },
+        employee_id: Number(localStorage.getItem('userId')) || 1
       };
 
       const url = localStorage.getItem('url') + 'admin.php';

@@ -32,6 +32,13 @@ const DataTable = ({
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
   const [selectedRows, setSelectedRows] = useState(new Set());
 
+  // Safely read values from a row using an accessor (string or function)
+  const getCellValue = (row, accessor) => {
+    if (!row) return '';
+    const value = typeof accessor === 'function' ? accessor(row) : row?.[accessor];
+    return value ?? '';
+  };
+
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
@@ -39,28 +46,38 @@ const DataTable = ({
   }, []);
 
   const sortedData = useMemo(() => {
-    let sorted = [...data];
-    if (sortColumn) {
-      sorted.sort((a, b) => {
-        const valA = typeof sortColumn === 'function' ? sortColumn(a) : a[sortColumn];
-        const valB = typeof sortColumn === 'function' ? sortColumn(b) : b[sortColumn];
+    const base = Array.isArray(data) ? data.filter(Boolean) : [];
+    if (!sortColumn) return base;
 
-        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
+    const sorted = [...base].sort((a, b) => {
+      const valA = getCellValue(a, sortColumn);
+      const valB = getCellValue(b, sortColumn);
+
+      // Numeric comparison when both are numbers
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return sortOrder === 'asc' ? valA - valB : valB - valA;
+      }
+
+      // Fallback to string comparison (case-insensitive)
+      const aStr = String(valA).toLowerCase();
+      const bStr = String(valB).toLowerCase();
+      const cmp = aStr.localeCompare(bStr);
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
+
     return sorted;
   }, [data, sortColumn, sortOrder]);
 
   const filteredData = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return sortedData;
+
     return sortedData.filter(item =>
-      columns.some(column =>
-        column.accessor &&
-        String(typeof column.accessor === 'function' ? column.accessor(item) : item[column.accessor])
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase())
-      )
+      columns.some(column => {
+        if (!column.accessor) return false;
+        const value = getCellValue(item, column.accessor);
+        return String(value).toLowerCase().includes(term);
+      })
     );
   }, [sortedData, columns, searchTerm]);
 
@@ -104,13 +121,14 @@ const DataTable = ({
   };
 
   const handleSelectAll = () => {
-    if (selectedRows.size === currentItems.length) {
+    if (selectedRows.size === currentItems.filter(Boolean).length) {
       setSelectedRows(new Set());
       console.log("Selected data: []");
     } else {
-      const newSelectedRows = new Set(currentItems.map(row => idAccessor ? row[idAccessor] : row));
+      const rowsToSelect = currentItems.filter(Boolean);
+      const newSelectedRows = new Set(rowsToSelect.map(row => (idAccessor ? row?.[idAccessor] : row)));
       setSelectedRows(newSelectedRows);
-      selectedData(Array.from(newSelectedRows).map(id => data.find(row => (idAccessor ? row[idAccessor] : row) === id)));
+      selectedData(Array.from(newSelectedRows).map(id => data.find(row => (idAccessor ? row?.[idAccessor] : row) === id)));
     }
   };
 
@@ -220,7 +238,7 @@ const DataTable = ({
     <div>
       {hideHeader ? null : (
         <div className={`flex ${isMobile ? 'flex-col' : 'justify-between'} items-start sm:items-center mb-4`}>
-          <div className="flex items-center gap-2 mb-2 sm:mb-0">
+          <div className={`flex items-center gap-2 mb-2 sm:mb-0 ${headerClassName || ''}`}>
             {title && <h2 className="text-xl font-bold p-3">{title}</h2>}
             {add && add}
             {headerAction && headerAction}
@@ -232,7 +250,7 @@ const DataTable = ({
                 placeholder="Search..."
                 value={searchTerm}
                 onChange={handleSearch}
-                className={`${isMobile ? 'w-full' : 'max-w-xs'}`}
+                className={`${isMobile ? 'w-full' : 'max-w-xs'} bg-background text-foreground`}
               />
             )}
           </div>
@@ -282,6 +300,7 @@ const DataTable = ({
               </TableHeader>
               <TableBody>
                 {currentItems.map((row, rowIndex) => {
+                  if (!row) return null;
                   const rowIdentifier = idAccessor ? row[idAccessor] : row;
                   return (
                     <TableRow
@@ -317,13 +336,8 @@ const DataTable = ({
                                 : column.additionalAccessor
                                   ? typeof column.additionalAccessor === 'function'
                                     ? column.additionalAccessor(row)
-                                    : `${typeof column.accessor === 'function'
-                                      ? column.accessor(row)
-                                      : row[column.accessor]
-                                    }${column.additionalAccessor}`
-                                  : (typeof column.accessor === 'function'
-                                    ? column.accessor(row)
-                                    : row[column.accessor])
+                                    : `${getCellValue(row, column.accessor)}${column.additionalAccessor}`
+                                  : getCellValue(row, column.accessor)
                             )}
 
                           </TableCell>

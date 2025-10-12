@@ -1,5 +1,5 @@
 // src/admin/approval/ApprovalReceipt.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import AdminHeader from "../components/AdminHeader";
@@ -43,19 +43,50 @@ export default function ApprovalReceipt() {
   const downpayment = useMemo(() => grandTotal * 0.5, [grandTotal]);
 
   // store totals (so you can access them later if needed)
-  useState(() => {
+  useEffect(() => {
     setState((prev) => ({
       ...prev,
       totals: { subtotal, vat, grandTotal, downpayment },
     }));
   }, [subtotal, vat, grandTotal, downpayment, setState]);
 
+  // Ensure adminId is present in context (fallback to localStorage keys)
+  useEffect(() => {
+    const getEffectiveAdminId = () => {
+      const keys = ["admin_id", "user_id", "userId", "userID", "employee_id", "employeeId"];
+      for (const k of keys) {
+        const v = localStorage.getItem(k);
+        if (v) return v;
+      }
+      return null;
+    };
+
+    if (!state.adminId) {
+      const v = getEffectiveAdminId();
+      if (v) {
+        setState((prev) => ({ ...prev, adminId: v }));
+      }
+    }
+  }, [state.adminId, setState]);
+
   const handleConfirmClick = () => {
-    if (!bookingId || !state.adminId || !state.selectedRooms?.length) {
+    const effectiveAdminId = state.adminId || (() => {
+      const keys = ["admin_id", "user_id", "userId", "userID", "employee_id", "employeeId"];
+      for (const k of keys) {
+        const v = localStorage.getItem(k);
+        if (v) return v;
+      }
+      return null;
+    })();
+
+    if (!state.adminId && effectiveAdminId) {
+      // hydrate context immediately for downstream usage
+      setState((prev) => ({ ...prev, adminId: effectiveAdminId }));
+    }
+
+    if (!bookingId || !effectiveAdminId || !state.selectedRooms?.length) {
       alert("Missing data to confirm approval.");
-      console.log(bookingId);
-      console.log(state.adminId);
-      console.log(state.selectedRooms?.length);
+      console.log({ bookingId, adminId: effectiveAdminId, selectedRoomsLen: state.selectedRooms?.length });
       return;
     }
     setShowConfirmModal(true);
@@ -64,24 +95,27 @@ export default function ApprovalReceipt() {
   const confirmApproval = async () => {
     setIsProcessing(true);
     try {
+      const effectiveAdminId = state.adminId || (() => {
+        const keys = ["admin_id", "user_id", "userId", "userID", "employee_id", "employeeId"];
+        for (const k of keys) {
+          const v = localStorage.getItem(k);
+          if (v) return v;
+        }
+        return null;
+      })();
+
       const fd = new FormData();
       fd.append("method", "approveCustomerBooking");
       fd.append(
         "json",
         JSON.stringify({
           booking_id: bookingId,
-          admin_id: state.adminId,
+          admin_id: effectiveAdminId,
           room_ids: state.selectedRooms.map((r) => r.id),
           booking_totalAmount: grandTotal,
           booking_downpayment: downpayment,
         })
       );
-
-      console.log("Booking Id: ", bookingId);
-      console.log("Admin Id: ", state.adminId);
-      console.log("Rooms: ", state.selectedRooms.map((r) => r.id));
-      console.log("Total Amount: ", grandTotal);
-      console.log("Downpayment: ", downpayment);
 
       const res = await axios.post(APIConn, fd);
       if (res.data?.success) {
@@ -106,9 +140,9 @@ export default function ApprovalReceipt() {
           Approve Booking #{bookingId} — Step 2: Receipt
         </h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Customer: <span className="font-medium">{state.customerName || "-"}</span> • Dates:{" "}
-          <span className="font-medium">{state.checkIn}</span> →{" "}
-          <span className="font-medium">{state.checkOut}</span> • Nights:{" "}
+          Customer: <span className="font-medium">{state.customerName || "-"}</span> • Dates: {""}
+          <span className="font-medium">{state.checkIn}</span> → {""}
+          <span className="font-medium">{state.checkOut}</span> • Nights: {""}
           <span className="font-medium">{nights}</span>
         </p>
 

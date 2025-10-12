@@ -142,11 +142,58 @@ const ChooseRooms = () => {
 
   const getRoomTypes = useCallback(async () => {
     const roomTypeReq = new FormData();
-    roomTypeReq.append('method', 'view_room_types');
+    roomTypeReq.append('method', 'viewRoomTypes');
 
     try {
       const res = await axios.post(APIConn, roomTypeReq);
-      setRoomTypes(Array.isArray(res.data) ? res.data : []);
+      let data = res.data;
+      // Handle cases where backend returns a JSON string
+      try {
+        if (typeof data === 'string') {
+          data = JSON.parse(data);
+        }
+      } catch (e) {
+        console.error('Failed to parse room types JSON:', e, data);
+        data = [];
+      }
+
+      // If no room types returned, fallback to deriving from viewRooms
+      if (!Array.isArray(data) || data.length === 0) {
+        const roomReq = new FormData();
+        roomReq.append('method', 'viewRooms');
+        try {
+          const roomsRes = await axios.post(APIConn, roomReq);
+          let roomsData = roomsRes.data;
+          if (typeof roomsData === 'string') {
+            try { roomsData = JSON.parse(roomsData); } catch { roomsData = []; }
+          }
+          if (Array.isArray(roomsData)) {
+            const byType = {};
+            roomsData.forEach(r => {
+              const id = r.roomtype_id ?? r.room_type_id;
+              if (!id) return;
+              if (!byType[id]) {
+                byType[id] = {
+                  roomtype_id: id,
+                  roomtype_name: r.roomtype_name,
+                  roomtype_description: r.roomtype_description,
+                  roomtype_price: Number(r.roomtype_price),
+                  roomtype_capacity: r.roomtype_capacity,
+                  roomtype_beds: r.roomtype_beds,
+                  roomtype_sizes: r.roomtype_sizes,
+                };
+              }
+            });
+            const derived = Object.values(byType);
+            setRoomTypes(derived);
+            return;
+          }
+        } catch (fallbackErr) {
+          console.error('Fallback fetch rooms failed:', fallbackErr);
+        }
+      }
+
+      setRoomTypes(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching room types:', err);
       setRoomTypes([]);

@@ -119,7 +119,7 @@ function Sidebar({ onCollapse }) {
     const userId = localStorage.getItem('userId')
     const userType = (localStorage.getItem('userType') || '').toLowerCase()
 
-    if (!userId || !['admin', 'employee', 'front-desk'].includes(userType)) {
+    if (!userId || !['admin', 'employee', 'front-desk', 'frontdesk'].includes(userType)) {
       console.log('Unauthorized access detected in Sidebar')
       toast.error('Employee access required')
       navigate('/employee/login')
@@ -130,19 +130,30 @@ function Sidebar({ onCollapse }) {
   const handleLogout = useCallback(async () => {
     try {
       const userId = localStorage.getItem('userId')
-      const userType = localStorage.getItem('userType')
+      const userTypeRaw = localStorage.getItem('userType') || ''
+      const userLevelRaw = localStorage.getItem('userLevel') || ''
+      const normalizedType = userTypeRaw.toLowerCase()
+      const normalizedLevel = userLevelRaw.toLowerCase()
 
-      if (!userId || userType !== 'admin') {
-      toast.error('Employee or Admin access required')
+      // Allow Admin and Front Desk/Employee to logout
+      const isAuthorized =
+        ['admin', 'employee', 'frontdesk', 'front-desk'].includes(normalizedType) ||
+        ['admin', 'frontdesk', 'front-desk'].includes(normalizedLevel)
+
+      if (!userId || !isAuthorized) {
+        toast.error('Employee or Admin access required')
+        navigate('/employee/login')
         return
       }
 
       const APIConn = localStorage.getItem('url') + "admin.php"
       const formData = new FormData()
       formData.append('method', 'logout')
+      const userTypeForApi =
+        normalizedType === 'frontdesk' || normalizedType === 'front-desk' ? 'employee' : (normalizedType || 'employee')
       formData.append('json', JSON.stringify({
         employee_id: userId,
-        user_type: userType
+        user_type: userTypeForApi
       }))
 
       const response = await axios.post(APIConn, formData)
@@ -172,12 +183,10 @@ function Sidebar({ onCollapse }) {
     { path: "/admin/profile", icon: <User className="w-4 h-4" />, label: "Profile" },
     { path: "/admin/roomslist", icon: <BedIcon className="w-4 h-4" />, label: "Rooms List" },
     { path: "/admin/bookinglist", icon: <File className="w-4 h-4" />, label: "Bookings List" },
-    { path: "/admin/guestprofile", icon: <User className="w-4 h-4" />, label: "Guest Profiles" },
     { path: "/admin/transactionhistory", icon: <HistoryIcon className="w-4 h-4" />, label: "Transaction History" },
     { path: "/admin/requestedamenities", icon: <PillBottleIcon className="w-4 h-4" />, label: "Amenity Requests" },
     { path: "/admin/calendar", icon: <Calendar1Icon className="w-4 h-4" />, label: "Calendar" },
     { path: "/admin/visitorslog", icon: <User2Icon className="w-4 h-4" />, label: "Visitors" },
-    { path: "/admin/reviews", icon: <StarIcon className="w-4 h-4" />, label: "Reviews" },
   ]
 
   const bookingLinks = [
@@ -190,9 +199,16 @@ function Sidebar({ onCollapse }) {
     { path: "/admin/billings", icon: <Wallet className="w-4 h-4" />, label: "Billings" },
   ]
 
+
+// Admin-only links
+  const adminOnlyLinks = [
+    { path: "/admin/employeelist", icon: <User className="w-4 h-4" />, label: "Employee List" },
+    { path: "/admin/reviews", icon: <StarIcon className="w-4 h-4" />, label: "Reviews" },
+    { path: "/admin/guestprofile", icon: <User className="w-4 h-4" />, label: "Guest Profiles" },
+  ];
+
   const masterLinks = [
     { path: "/admin/roomtypemaster", icon: <Bed className="w-4 h-4" />, label: "Room Types" },
-    { path: "/admin/employeelist", icon: <User className="w-4 h-4" />, label: "Employee List" },
     { path: "/admin/amenitymaster", icon: <PillBottleIcon className="w-4 h-4" />, label: "Amenities" },
     { path: "/admin/chargemaster", icon: <MinusCircleIcon className="w-4 h-4" />, label: "Charges" },
     { path: "/admin/chargescategory", icon: <PlusSquareIcon className="w-4 h-4" />, label: "Charges Masters" },
@@ -219,6 +235,18 @@ function Sidebar({ onCollapse }) {
           </Button>
         </Link>
       ))}
+
+      {/* Admin-only Links */}
+      {(localStorage.getItem("userLevel") || "").toLowerCase() === "admin" && (
+        adminOnlyLinks.map((item, index) => (
+          <Link to={item.path} key={`admin-${index}`} className="block w-full" onClick={saveScrollPosition}>
+            <Button variant="ghost" className="w-full justify-start gap-2 text-white hover:bg-white/10 hover:text-white">
+              {item.icon}
+              {item.label}
+            </Button>
+          </Link>
+        ))
+      )}
 
       {/* Collapsible: Bookings */}
       <Collapsible open={openBookings} onOpenChange={(open) => {
