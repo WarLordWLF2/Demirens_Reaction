@@ -15,6 +15,7 @@ import { NumberFormatter } from '../Function_Files/NumberFormatter';
 import DataTable from "@/components/ui/data-table";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function OnlineReqList() {
   const APIConn = `${localStorage.url}admin.php`;
@@ -166,7 +167,18 @@ export default function OnlineReqList() {
       }));
     });
 
-    navigate(`/admin/approve/${bookingId}`);
+    navigate(`/admin/receipt/${bookingId}`);
+  };
+
+  // Contact view handler
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [contactInfo, setContactInfo] = useState({ phone: '', email: '', name: '' });
+  const viewContact = (b) => {
+    const phone = b?.customers_online_phone || b?.customers_phone || b?.phone_number || b?.phone || b?.contact_number || b?.customer_phone || 'No phone on file';
+    const email = b?.customers_online_email || b?.customers_email || b?.email || b?.customer_email || 'No email on file';
+    const name = b?.customer_name || [b?.first_name, b?.last_name].filter(Boolean).join(' ') || '';
+    setContactInfo({ phone, email, name });
+    setContactModalOpen(true);
   };
 
   // Columns for DataTable (disable column-click sorting)
@@ -207,22 +219,8 @@ export default function OnlineReqList() {
       sortable: false,
       headerClassName: 'min-w-[200px]'
     },
-    {
-      header: 'Nights',
-      accessor: (row) => {
-        const checkIn = row?.booking_checkin_dateandtime || row?.checkin_date;
-        const checkOut = row?.booking_checkout_dateandtime || row?.checkout_date;
-        return diffNights(checkIn, checkOut);
-      },
-      sortable: false,
-      className: 'text-right'
-    },
-    {
-      header: 'Guests',
-      accessor: (row) => NumberFormatter.formatCount(row?.guests_amnt || row?.guests || 0),
-      sortable: false,
-      className: 'text-right'
-    },
+    // Removed Nights column
+    // Removed Guests column
     {
       header: 'Requested',
       accessor: (row) => summarizeRequested(row?.rooms).map(s => `${s.name}×${s.count}`).join(', '),
@@ -241,12 +239,17 @@ export default function OnlineReqList() {
       sortable: false,
     },
     {
-      header: '',
+      header: 'Actions',
       accessor: 'action',
       cell: (row) => (
-        <Button onClick={(e) => { e.stopPropagation(); openApproval(row); }} variant="default">
-          Approve
-        </Button>
+        <div className="flex gap-2 justify-end">
+          <Button onClick={(e) => { e.stopPropagation(); viewContact(row); }} variant="outline">
+            View
+          </Button>
+          <Button onClick={(e) => { e.stopPropagation(); openApproval(row); }} variant="default">
+            Approve
+          </Button>
+        </div>
       ),
       headerClassName: 'text-right',
       className: 'text-right',
@@ -358,6 +361,32 @@ export default function OnlineReqList() {
           hideSearch={true}
         />
       </div>
+      <Dialog open={contactModalOpen} onOpenChange={setContactModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Contact Information</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            {contactInfo.name && (
+              <div>
+                <div className="text-muted-foreground">Customer</div>
+                <div className="font-medium text-foreground">{contactInfo.name}</div>
+              </div>
+            )}
+            <div>
+              <div className="text-muted-foreground">Phone</div>
+              <div className="font-medium text-foreground">{contactInfo.phone || 'No phone on file'}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Email</div>
+              <div className="font-medium text-foreground">{contactInfo.email || 'No email on file'}</div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setContactModalOpen(false)}>Close</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

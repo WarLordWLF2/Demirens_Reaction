@@ -69,6 +69,7 @@ function AdminDashboard() {
   }
   // New: online pending booking requests count
   const [onlinePendingCount, setOnlinePendingCount] = useState(0)
+  const [pendingBookingsCount, setPendingBookingsCount] = useState(0)
   // Fetch count of pending online booking requests
   const fetchOnlinePendingCount = async () => {
     try {
@@ -228,7 +229,6 @@ function AdminDashboard() {
       const res = await axios.post(APIConn, formData);
       
       if (res.data && !res.data.error) {
-        // When using the enhanced list, setActiveBookings expects a count
         const count = Array.isArray(res.data) ? res.data.length : (res.data.active_bookings_count ?? 0);
         setActiveBookings({ active_bookings_count: count });
       } else {
@@ -323,12 +323,31 @@ function AdminDashboard() {
     },
   }
 
+  const fetchPendingBookings = async () => {
+    try {
+      const formData = new FormData();
+      formData.append('method', 'viewBookingsPendingEnhanced');
+      const res = await axios.post(APIConn, formData);
+      if (Array.isArray(res.data)) {
+        setPendingBookingsCount(res.data.length);
+      } else if (res.data && typeof res.data.pending_count === 'number') {
+        setPendingBookingsCount(res.data.pending_count);
+      } else {
+        setPendingBookingsCount(0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch pending bookings:', error);
+      setPendingBookingsCount(0);
+    }
+  }
+
   useEffect(() => {
     gatherBooking(selectedYear);
     fetchActiveBookings();
     fetchAvailableRooms();
     fetchRoomStatusDistribution();
     fetchOnlinePendingCount();
+    fetchPendingBookings();
     // New: fetch most booked rooms
     const fetchMostBookedRooms = async (scope) => {
       try {
@@ -357,6 +376,7 @@ function AdminDashboard() {
       fetchRoomStatusDistribution();
       fetchMostBookedRooms(mostBookedScope);
       fetchOnlinePendingCount();
+      fetchPendingBookings();
     }, 30000);
 
     return () => clearInterval(interval);
@@ -451,32 +471,40 @@ function AdminDashboard() {
                       <div className="text-xs text-green-600 dark:text-green-400">Total Vacant</div>
                     </div>
                   </CardContent>
+                  <CardFooter className="pt-2">
+                    <div className="w-full flex justify-center">
+                      <Button variant="outline" size="sm" onClick={() => setShowAvailableTypesModal(true)}>
+                        View by Room Type
+                      </Button>
+                    </div>
+                  </CardFooter>
                 </Card>
               </div>
 
-              {/* Pending Rooms Card */}
+              {/* Pending Bookings Card */}
               <div className="w-full">
                 <Card className="min-h-[120px] bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-700">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-amber-900 dark:text-amber-100 flex items-center gap-2">
-                        <Calendar className="h-5 w-5" />
-                        Pending Rooms
+                        <AlertTriangle className="h-5 w-5" />
+                        Pending Bookings
                       </CardTitle>
                       <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100">Live</Badge>
                     </div>
-                    <CardDescription className="text-amber-700 dark:text-amber-300">Rooms awaiting assignment/cleaning</CardDescription>
+                    <CardDescription className="text-amber-700 dark:text-amber-300">Awaiting approval/check-in</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="text-center">
                       <div className="text-3xl font-bold text-amber-900 dark:text-amber-100 mb-1">
-                        {NumberFormatter.formatCount(pendingCount || 0)}
+                        {NumberFormatter.formatCount(pendingBookingsCount || 0)}
                       </div>
-                      <div className="text-xs text-amber-600 dark:text-amber-400">Pending</div>
+                      <div className="text-xs text-amber-600 dark:text-amber-400">Pending Bookings</div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
+
             </div>
           </section>
 

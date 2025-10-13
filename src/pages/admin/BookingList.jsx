@@ -64,6 +64,9 @@ function AdminBookingList() {
   const [extendedRooms, setExtendedRooms] = useState([]);
   const [invoiceData, setInvoiceData] = useState(null);
   const [billingData, setBillingData] = useState([]);
+  // Image viewer state
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [imageViewerSrc, setImageViewerSrc] = useState('');
 
   const getAllStatus = useCallback(async () => {
     const formData = new FormData();
@@ -1560,6 +1563,40 @@ function AdminBookingList() {
                   </div>
                 </div>
 
+                {/* Booking Image Preview */}
+                <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border dark:border-gray-800">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Uploaded File</h3>
+                  {selectedBooking?.booking_fileName ? (
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={`${(localStorage.getItem('url') || localStorage.url)}images/${selectedBooking.booking_fileName}`}
+                        alt="Booking file"
+                        className="w-48 h-48 object-cover rounded-md border dark:border-gray-700 cursor-zoom-in"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        onClick={() => {
+                          const baseUrl = (localStorage.getItem('url') || localStorage.url);
+                          const fullSrc = `${baseUrl}images/${selectedBooking.booking_fileName}`;
+                          setImageViewerSrc(fullSrc);
+                          setIsImageViewerOpen(true);
+                        }}
+                      />
+                      <div className="text-sm text-gray-600 dark:text-gray-400 break-all">
+                        <p>File name: <span className="font-mono text-gray-900 dark:text-white">{selectedBooking.booking_fileName}</span></p>
+                        <a
+                          href={`${(localStorage.getItem('url') || localStorage.url)}images/${selectedBooking.booking_fileName}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                        >
+                          <ExternalLink className="w-4 h-4" /> Open in new tab
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No file uploaded for this booking.</p>
+                  )}
+                </div>
+
                 {/* Booking Information */}
                 <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Booking Information</h3>
@@ -2644,6 +2681,22 @@ function AdminBookingList() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Full Image Viewer Modal */}
+        <Dialog open={isImageViewerOpen} onOpenChange={setIsImageViewerOpen}>
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-6xl p-0 bg-black">
+            <div className="relative">
+              <img src={imageViewerSrc} alt="Full size" className="w-full h-auto max-h-[85vh] object-contain" />
+              <button
+                onClick={() => setIsImageViewerOpen(false)}
+                className="absolute top-3 right-3 bg-white/80 hover:bg-white text-black rounded-full px-3 py-1 text-sm"
+                aria-label="Close"
+              >
+                Close
+              </button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

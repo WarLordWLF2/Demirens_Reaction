@@ -23,6 +23,8 @@ const ChooseRooms = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRoomTypes, setSelectedRoomTypes] = useState([]);
+  // NEW: available counts per room type
+  const [availableCounts, setAvailableCounts] = useState({});
 
   // Booking details state - extract date part from datetime strings
   const [checkIn, setCheckIn] = useState(() => {
@@ -49,6 +51,10 @@ const ChooseRooms = () => {
 
   // Extra filter state
   const [floor, setFloor] = useState('');
+
+  // Incremental loading config
+  const LOAD_STEP = 6;
+  const [visibleCount, setVisibleCount] = useState(LOAD_STEP);
 
   // Availability helpers
   const parseDate = (str) => {
@@ -200,6 +206,53 @@ const ChooseRooms = () => {
     }
   }, [APIConn]);
 
+  // NEW: Fetch available rooms count per room type (same source as Dashboard)
+  const fetchAvailableRoomsCounts = useCallback(async () => {
+    try {
+      const formData = new FormData();
+      formData.append('method', 'getAvailableRoomsCount');
+      const res = await axios.post(APIConn, formData);
+      let payload = res.data;
+      if (typeof payload === 'string') {
+        try { payload = JSON.parse(payload); } catch { payload = {}; }
+      }
+
+      // Prefer the new by_roomtype mapping from backend if present
+      const byType = payload && payload.by_roomtype ? payload.by_roomtype : null;
+      if (byType && typeof byType === 'object') {
+        setAvailableCounts(byType);
+        return;
+      }
+
+      // Fallback to legacy named fields
+      const colMap = {
+        1: 'standard_twin_available',
+        2: 'single_available',
+        3: 'double_available',
+        4: 'triple_available',
+        5: 'quadruple_available',
+        6: 'family_a_available',
+        7: 'family_b_available',
+        8: 'family_c_available',
+      };
+      const counts = {};
+      Object.entries(colMap).forEach(([id, col]) => {
+        counts[id] = Number(payload?.[col]) || 0;
+      });
+      setAvailableCounts(counts);
+    } catch (error) {
+      console.error('Failed to fetch available rooms counts:', error);
+      setAvailableCounts({});
+    }
+  }, [APIConn]);
+
+  useEffect(() => {
+    getRoomTypes();
+    fetchAvailableRoomsCounts();
+    const interval = setInterval(fetchAvailableRoomsCounts, 30000);
+    return () => clearInterval(interval);
+  }, [getRoomTypes, fetchAvailableRoomsCounts]);
+
   const getRooms = useCallback(async () => {
     if (selectedRoomTypes.length === 0) {
       setRooms([]);
@@ -247,6 +300,11 @@ const ChooseRooms = () => {
     } else {
       // Find the room type ID from the roomTypes array
       const matchingRoomType = roomTypes.find(rt => rt.roomtype_name === room.roomtype_name);
+      const left = Number((availableCounts || {})[matchingRoomType?.roomtype_id]) || 0;
+      if (left <= 0) {
+        alert("This room type is fully booked for the selected dates. Please choose a different room type.");
+        return;
+      }
       
       setSelectedRooms(prev => [...prev, {
         id: room.roomnumber_id,
@@ -368,6 +426,14 @@ const ChooseRooms = () => {
     return matchesSearch && matchesGuests && matchesFloor && availableOnDates;
   });
 
+  // Visible subset of rooms
+  const visibleRooms = filteredRooms.slice(0, visibleCount);
+
+  // Reset visible rooms when filters / inputs change
+  useEffect(() => {
+    setVisibleCount(LOAD_STEP);
+  }, [searchTerm, floor, checkIn, checkOut, adult, children, selectedRoomTypes, rooms.length]);
+
   // Scroll to bottom handler
   const scrollToBottom = () => {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
@@ -485,6 +551,12 @@ const ChooseRooms = () => {
                     {selectedRoomTypes.includes(roomType.roomtype_id.toString()) && (
                       <span className="text-xs text-blue-600 dark:text-blue-400">Selected</span>
                     )}
+                    {/* NEW: Availability message per room type */}
+                    <div className="mt-1">
+                      <span className={`text-xs ${Number((availableCounts || {})[roomType.roomtype_id]) > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        Amount left: {Number((availableCounts || {})[roomType.roomtype_id]) || 0}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">
@@ -538,8 +610,8 @@ const ChooseRooms = () => {
         ) : filteredRooms.length === 0 ? (
           <p className="text-center text-red-500 font-semibold">No Available Rooms</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredRooms.map((room, index) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {visibleRooms.map((room, index) => {
               const imageArray = room.images
                 ? room.images.split(",").map(img => img.trim())
                 : [];
@@ -564,62 +636,72 @@ const ChooseRooms = () => {
                         ))
                       ) : (
                         <CarouselItem>
-                          <div className="w-full h-56 flex items-center justify-center bg-gray-200 dark:bg-gray-800">
-                            <span className="text-gray-700 dark:text-gray-300 font-semibold">
-                              Images Unavailable
-                            </span>
-                          </div>
+                          <div className="w-full h-56 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-500">No Image</div>
                         </CarouselItem>
                       )}
                     </CarouselContent>
-
-                    <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow p-1 hover:bg-white dark:hover:bg-gray-700" />
-                    <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow p-1 hover:bg-white dark:hover:bg-gray-700" />
+                    <CarouselPrevious />
+                    <CarouselNext />
                   </Carousel>
 
                   {/* Room Info */}
                   <div className="p-4">
-                    <div className="flex justify-between items-center">
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                        {room.roomtype_name} - Room #{room.roomnumber_id} (Floor {room.roomfloor})
-                      </h2>
-                      <p className="text-green-600 dark:text-green-400 font-bold text-lg">
-                        ₱{room.roomtype_price}
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{room.roomtype_name}</h3>
+                      <span className="text-green-600 dark:text-green-400 font-bold">₱{Number(room.roomtype_price)}</span>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-300 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Capacity: {room.roomtype_capacity} | Beds: {room.roomtype_beds} | Size: {room.roomtype_sizes}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-2">
                       {room.roomtype_description}
                     </p>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      Capacity: {room.roomtype_capacity}
-                    </p>
+                    {/* Show remaining amount per room type on each card */}
+                    <div className="mt-2">
+                      <span className={`text-xs ${((Number((availableCounts || {})[roomTypes.find(rt => rt.roomtype_name === room.roomtype_name)?.roomtype_id]) || 0) > 0) ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        Amount left: {Number((availableCounts || {})[roomTypes.find(rt => rt.roomtype_name === room.roomtype_name)?.roomtype_id]) || 0}
+                      </span>
+                    </div>
 
-                    {/* Availability/Conflict badge */}
-                    {checkIn && checkOut && (
-                      <div className="mt-2">
-                        {isRoomAvailableForRange(room, checkIn, checkOut) ? (
-                          <span className="inline-block text-xs px-2 py-1 rounded bg-green-100 text-green-700">
-                            Available on selected dates
-                          </span>
-                        ) : (
-                          <span className="inline-block text-xs px-2 py-1 rounded bg-red-100 text-red-700">
-                            Conflict with existing booking
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    <button
-                      onClick={() => toggleRoomSelection(room)}
-                      className={`mt-3 px-4 py-2 rounded text-white ${isRoomSelected(room) ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 hover:bg-gray-500'
-                        }`}
-                    >
-                      {isRoomSelected(room) ? 'Selected' : 'Select Room'}
-                    </button>
+                    <div className="mt-4 flex items-center justify-between">
+                      <span className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                        Floor: {room.roomfloor}
+                      </span>
+                      <button
+                        onClick={() => toggleRoomSelection(room)}
+                        disabled={(Number((availableCounts || {})[roomTypes.find(rt => rt.roomtype_name === room.roomtype_name)?.roomtype_id]) || 0) <= 0 && !isRoomSelected(room)}
+                        className={`${isRoomSelected(room) ? 'bg-red-600 hover:bg-red-700' : ((Number((availableCounts || {})[roomTypes.find(rt => rt.roomtype_name === room.roomtype_name)?.roomtype_id]) || 0) <= 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700')} text-white px-4 py-2 rounded`}
+                      >
+                        {isRoomSelected(room) ? 'Remove' : ((Number((availableCounts || {})[roomTypes.find(rt => rt.roomtype_name === room.roomtype_name)?.roomtype_id]) || 0) <= 0 ? 'Fully Booked' : 'Select')}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
             })}
+
+            {(visibleCount > LOAD_STEP || visibleCount < filteredRooms.length) && (
+              <div className="col-span-1 md:col-span-2 lg:col-span-3 flex justify-center gap-3">
+                {visibleCount > LOAD_STEP && (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount(prev => Math.max(LOAD_STEP, prev - LOAD_STEP))}
+                    className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-600"
+                  >
+                    Show Less
+                  </button>
+                )}
+                {visibleCount < filteredRooms.length && (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount(prev => Math.min(prev + LOAD_STEP, filteredRooms.length))}
+                    className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+                  >
+                    See More Rooms
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 

@@ -30,7 +30,6 @@ import EmployeeList from './pages/admin/EmployeeList';
 // Online
 import OnlineReqList from './pages/admin/Online_Folder/OnlineReqList';
 import { ApprovalProvider } from './pages/admin/Online_Folder/ApprovalContext';
-import ApproveRooms from './pages/admin/Online_Folder/ApproveRooms';
 import ApprovalReceipt from './pages/admin/Online_Folder/ApprovalReceipt';
 
 // Walk In
@@ -228,11 +227,12 @@ function App() {
                     <OnlineReqList />
                   </AdminRouteGuard>
                 } />
-                <Route path="/admin/approve/:bookingId" element={
+                {/* Route temporarily disabled: ApproveRooms component missing */}
+                {/* <Route path="/admin/approve/:bookingId" element={
                   <AdminRouteGuard>
                     <ApproveRooms />
                   </AdminRouteGuard>
-                } />
+                } /> */}
                 <Route path="/admin/receipt/:bookingId" element={
                   <AdminRouteGuard>
                     <ApprovalReceipt />
