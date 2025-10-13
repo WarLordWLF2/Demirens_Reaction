@@ -40,10 +40,8 @@ import PaymentMethod from './pages/admin/WalkIn_Folder/PaymentMethod';
 import Confirmation from './pages/admin/WalkIn_Folder/Confirmation';
 import { WalkInProvider } from './pages/admin/WalkIn_Folder/WalkInContext';
 
-//  ------------------------------------------------------------ End of Admin Pages ------------------------------------------------------------
 
-
-// Authentication
+// ------------------------------------------------------------ User Auth Side Here ------------------------------------------------------------
 import Login from './pages/UserAuth_Folder/Login';
 import EmployeeLogin from './pages/UserAuth_Folder/Login_Employees';
 import Register from './pages/UserAuth_Folder/Register';
@@ -51,6 +49,9 @@ import OTPAuth from './pages/UserAuth_Folder/OTP_Auth';
 import ForgotPassword from './pages/UserAuth_Folder/ForgotPassword';
 import ResetPassword from './pages/UserAuth_Folder/ResetPassword';
 
+// ------------------------------------------------------------ Customer Side Here ------------------------------------------------------------
+import RoomSearch from './pages/customer/RoomSearch';
+import CustomerRoomView from './pages/customer/CustomerRoomView';
 import CustomerAbout from './pages/customer/CustomerAbout';
 import CustomerBooking from './pages/customer/CustomerBooking';
 import CustomerRooms from './pages/customer/CustomerRooms';
@@ -261,6 +262,8 @@ function App() {
                 } />
                 
                 {/* Customer Route */}
+                <Route path="/customer/roomview" element={<CustomerRoomView />} />
+                <Route path="/customer/roomsearch" element={<RoomSearch />} />
                 <Route path="/customer/about" element={<CustomerAbout />} />
                 <Route path="/customer/bookings" element={<CustomerBooking />} />
                 <Route path="/customer/rooms" element={<CustomerRooms />} />

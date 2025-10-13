@@ -6,8 +6,8 @@ const ApprovalContext = createContext(null);
 export const ApprovalProvider = ({ children }) => {
   const [state, setState] = React.useState({
     bookingId: null,
-    adminId: (() => {
-      const keys = ["admin_id", "user_id", "userId", "userID", "employee_id", "employeeId"];
+    userId: (() => {
+      const keys = ["user_id", "userId", "userID", "admin_id", "employee_id", "employeeId"];
       for (const k of keys) {
         const v = localStorage.getItem(k);
         if (v) return v;

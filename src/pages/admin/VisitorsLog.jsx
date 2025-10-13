@@ -23,6 +23,9 @@ import {
 } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { useNavigate, useLocation } from 'react-router-dom'
+// Removed chart imports per request
+// import { ChartContainer, ChartTooltip } from '@/components/ui/chart'
+// import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Cell } from 'recharts'
 
 function AdminVisitorsLog() {
   const APIConn = useMemo(() => `${localStorage.url}admin.php`, [])
@@ -39,12 +42,20 @@ function AdminVisitorsLog() {
   const [loading, setLoading] = useState(true)
   // const [statsLoading, setStatsLoading] = useState(true) // removed: not used
   const [isCollapsed, setIsCollapsed] = useState(false)
+  
+  // Role detection (Admin vs Front-Desk)
+  const rawType = (localStorage.getItem('userType') || '').toLowerCase().replace(/[\s_-]/g, '')
+  const rawLevel = (localStorage.getItem('userLevel') || '').toLowerCase().replace(/[\s_-]/g, '')
+  const normalizedRole = rawLevel || rawType
+  const isAdmin = normalizedRole === 'admin'
+  const isFrontDesk = normalizedRole === 'frontdesk'
 
-  // Filters
+  // UI states
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // visitorapproval_id or 'all'
   const [dateFrom, setDateFrom] = useState('') // yyyy-MM-dd
   const [dateTo, setDateTo] = useState('')
+  const [totalRange, setTotalRange] = useState('day')
 
   // Modal (Add/Edit)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -55,7 +66,13 @@ function AdminVisitorsLog() {
   const [formCheckout, setFormCheckout] = useState('')
   const [formStatusId, setFormStatusId] = useState('')
   const [formBookingId, setFormBookingId] = useState('')
-
+  const [formBookingCustomerName, setFormBookingCustomerName] = useState('')
+  
+  // Booking preview modal state
+  const [bookingPreviewOpen, setBookingPreviewOpen] = useState(false)
+  const [bookingPreviewLoading, setBookingPreviewLoading] = useState(false)
+  const [bookingPreview, setBookingPreview] = useState(null)
+  
   // Helpers
   const getStatusNameById = useCallback((id) => {
     const found = approvals.find(a => String(a.visitorapproval_id) === String(id))
@@ -83,6 +100,7 @@ function AdminVisitorsLog() {
     if (s.includes('pending')) return 'bg-yellow-500/15 text-yellow-700 border border-yellow-300'
     if (s.includes('approved')) return 'bg-green-500/15 text-green-700 border border-green-300'
     if (s.includes('rejected') || s.includes('declined')) return 'bg-red-500/15 text-red-700 border border-red-300'
+    if (s.includes('left')) return 'bg-indigo-500/15 text-indigo-700 border border-indigo-300'
     if (s.includes('checked-out') || s.includes('checkout')) return 'bg-gray-500/15 text-gray-700 border border-gray-300'
     return 'bg-blue-500/15 text-blue-700 border border-blue-300'
   }, [])
@@ -109,7 +127,7 @@ function AdminVisitorsLog() {
     try {
       setLoading(true)
       const fd = new FormData()
-      fd.append('method', 'get_visitor_logs')
+      fd.append('method', 'getVisitorLogs')
       const res = await axios.post(APIConn, fd)
       const list = Array.isArray(res.data) ? res.data : []
       const normalized = list.map(item => ({
@@ -187,9 +205,9 @@ function AdminVisitorsLog() {
       const selRoom = location.state?.selectedBookingRoom || (Array.isArray(selRooms) && selRooms[0])
       if (selRoom?.booking_id) {
         setFormBookingId(String(selRoom.booking_id))
-        if (selRoom.customer_name) {
-          setFormVisitorName(selRoom.customer_name)
-        }
+      }
+      if (selRoom?.customer_name) {
+        setFormBookingCustomerName(selRoom.customer_name)
       }
       setIsDialogOpen(true)
     }
@@ -214,6 +232,7 @@ function AdminVisitorsLog() {
      setFormCheckout('')
      setFormStatusId('')
      setFormBookingId('')
+     setFormBookingCustomerName('')
    }
 
   // Quick helpers for better form UX
@@ -223,6 +242,9 @@ function AdminVisitorsLog() {
   const setCheckoutNowInForm = useCallback(() => {
     setFormCheckout(nowLocalDT())
   }, [nowLocalDT])
+  const clearCheckinInForm = useCallback(() => {
+    setFormCheckin('')
+  }, [])
   const clearCheckoutInForm = useCallback(() => {
     setFormCheckout('')
   }, [])
@@ -230,23 +252,31 @@ function AdminVisitorsLog() {
     const id = getStatusIdByName(name)
     if (id) setFormStatusId(String(id))
   }, [getStatusIdByName])
+  const isPendingSelected = useMemo(
+    () => getStatusNameById(formStatusId) === 'Pending',
+    [formStatusId, getStatusNameById]
+  )
   const isFormValid = useMemo(
     () => Boolean(
       formVisitorName.trim() &&
       formPurpose.trim() &&
-      formCheckin &&
+      (isPendingSelected || formCheckin) &&
       String(formBookingId).trim()
     ),
-    [formVisitorName, formPurpose, formCheckin, formBookingId]
+    [formVisitorName, formPurpose, formCheckin, formBookingId, isPendingSelected]
   )
 
-  // Display label for booking selection combining ID and customer name
+  // Limit status options to IDs 1 and 3 (Approved, Pending)
+  const statusOptions13 = useMemo(
+    () => approvals.filter(a => ['1', '3'].includes(String(a.visitorapproval_id))),
+    [approvals]
+  )
   const bookingDisplayLabel = useMemo(() => {
     const idStr = String(formBookingId || '').trim()
     if (!idStr) return ''
-    const nameStr = String(formVisitorName || '').trim()
+    const nameStr = String(formBookingCustomerName || '').trim()
     return nameStr ? `${idStr} — ${nameStr}` : idStr
-  }, [formBookingId, formVisitorName])
+  }, [formBookingId, formBookingCustomerName])
 
   const handleNavigateToBookingRoomSelection = () => {
     navigate('/admin/bookingroomselection', {
@@ -266,9 +296,9 @@ function AdminVisitorsLog() {
     const selRoom = location.state?.selectedBookingRoom || (Array.isArray(selRooms) && selRooms[0])
     if (selRoom?.booking_id) {
       setFormBookingId(String(selRoom.booking_id))
-      if (selRoom.customer_name && !formVisitorName) {
-        setFormVisitorName(selRoom.customer_name)
-      }
+    }
+    if (selRoom?.customer_name) {
+      setFormBookingCustomerName(selRoom.customer_name)
     }
 
     setIsDialogOpen(true)
@@ -303,11 +333,11 @@ function AdminVisitorsLog() {
       // Basic validation for better UX
       if (!formVisitorName.trim()) { toast.error('Visitor name is required'); return }
       if (!formPurpose.trim()) { toast.error('Purpose is required'); return }
-      if (!formCheckin) { toast.error('Check-in time is required'); return }
+      if (!isPendingSelected && !formCheckin) { toast.error('Check-in time is required'); return }
       if (!String(formBookingId).trim()) { toast.error('Booking ID is required'); return }
 
       const fd = new FormData()
-      const method = editingLog ? 'update_visitor_log' : 'add_visitor_log'
+      const method = editingLog ? 'updateVisitorLog' : 'addVisitorLog'
       fd.append('method', method)
       if (editingLog) fd.append('visitorlogs_id', editingLog.visitorlogs_id)
       fd.append('visitorlogs_visitorname', formVisitorName)
@@ -345,6 +375,7 @@ function AdminVisitorsLog() {
         if (n.includes('reject')) return 'declined'
         if (n.includes('decline')) return 'declined'
         if (n.includes('approve')) return 'approved'
+        if (n.includes('left')) return 'left'
         if (n.includes('check-out') || n.includes('checked-out')) return 'checked-out'
         if (n.includes('pend')) return 'pending'
         return n
@@ -356,7 +387,7 @@ function AdminVisitorsLog() {
         return
       }
       const fd = new FormData()
-      fd.append('method', 'set_visitor_approval')
+      fd.append('method', 'setVisitorApproval')
       fd.append('visitorlogs_id', row.visitorlogs_id)
       fd.append('visitorapproval_id', target.visitorapproval_id)
       const res = await axios.post(APIConn, fd)
@@ -376,7 +407,7 @@ function AdminVisitorsLog() {
   const setCheckoutNow = async (row) => {
     try {
       const fd = new FormData()
-      fd.append('method', 'update_visitor_log')
+      fd.append('method', 'updateVisitorLog')
       fd.append('visitorlogs_id', row.visitorlogs_id)
       const now = new Date()
       const pad = (n) => String(n).padStart(2, '0')
@@ -391,13 +422,15 @@ function AdminVisitorsLog() {
       const res = await axios.post(APIConn, fd)
       const ok = res.data?.response === true || res.data?.success === true
       if (ok) {
-        // Try set status to Checked-Out if available
-        const checkedOut = approvals.find(a => (a.visitorapproval_status || '').toLowerCase().includes('checked-out'))
-        if (checkedOut) {
+        // Prefer setting status to Left if available, otherwise fall back to Checked-Out
+        const leftStatus = approvals.find(a => (a.visitorapproval_status || '').toLowerCase().includes('left'))
+        const checkedOutStatus = approvals.find(a => (a.visitorapproval_status || '').toLowerCase().includes('checked-out'))
+        const nextStatus = leftStatus || checkedOutStatus
+        if (nextStatus) {
           const fd2 = new FormData()
-          fd2.append('method', 'set_visitor_approval')
+          fd2.append('method', 'setVisitorApproval')
           fd2.append('visitorlogs_id', row.visitorlogs_id)
-          fd2.append('visitorapproval_id', checkedOut.visitorapproval_id)
+          fd2.append('visitorapproval_id', nextStatus.visitorapproval_id)
           await axios.post(APIConn, fd2)
         }
         toast.success('Checkout time updated')
@@ -424,28 +457,115 @@ function AdminVisitorsLog() {
     }
   }, [editingLog, submitLog, setRowStatus, formVisitorName, formBookingId])
 
+  // In-component helper: open booking preview modal with details
+  const openBookingPreview = useCallback(async (row) => {
+    try {
+      setBookingPreviewOpen(true)
+      setBookingPreviewLoading(true)
+      setBookingPreview(null)
+
+      // First try to find booking via enhanced bookings list
+      const fd = new FormData()
+      fd.append('method', 'viewBookingsEnhanced')
+      const res = await axios.post(APIConn, fd)
+      let booking = null
+      if (Array.isArray(res.data)) {
+        booking = res.data.find(b => String(b.booking_id) === String(row.booking_id)) || null
+      }
+
+      if (booking) {
+        const reference_no = booking.reference_no || '—'
+        const name = booking.customer_name || 'Walk-In'
+        const room_numbers = booking.room_numbers
+          ? booking.room_numbers.toString()
+          : (booking.roomnumber_id ? String(booking.roomnumber_id) : '—')
+        const purpose = row.visitorlogs_purpose || '—'
+        setBookingPreview({ reference_no, name, room_numbers, purpose })
+        setBookingPreviewLoading(false)
+        return
+      }
+
+      // Fallback: query booking rooms and aggregate info by booking_id
+      const fd2 = new FormData()
+      fd2.append('method', 'get_booking_rooms')
+      const res2 = await axios.post(APIConn, fd2)
+      const rooms = Array.isArray(res2.data) ? res2.data.filter(r => String(r.booking_id) === String(row.booking_id)) : []
+
+      const reference_no = rooms[0]?.reference_no || '—'
+      const name = rooms[0]?.customer_name || 'Walk-In'
+      const room_numbers = rooms.length > 0 ? rooms.map(r => r.roomnumber_id).join(', ') : '—'
+      const purpose = row.visitorlogs_purpose || '—'
+      setBookingPreview({ reference_no, name, room_numbers, purpose })
+      setBookingPreviewLoading(false)
+    } catch (err) {
+      console.error('Error opening booking preview:', err)
+      toast.error('Failed to load booking details')
+      setBookingPreview({ reference_no: '—', name: '—', room_numbers: '—', purpose: row.visitorlogs_purpose || '—' })
+      setBookingPreviewLoading(false)
+    }
+  }, [APIConn])
+
   // Derived stats
   const stats = useMemo(() => {
-    const counts = { total: logs.length, pending: 0, approved: 0, rejected: 0, checked_out: 0 }
+    const counts = { total: logs.length, pending: 0, approved: 0, rejected: 0, checked_out: 0, left: 0 }
     logs.forEach(r => {
       const name = getStatusNameById(r.visitorapproval_id).toLowerCase()
       if (name.includes('pending')) counts.pending++
       else if (name.includes('approved')) counts.approved++
       else if (name.includes('rejected') || name.includes('declined')) counts.rejected++
+      else if (name.includes('left')) counts.left++
       else if (name.includes('checked-out') || name.includes('checkout')) counts.checked_out++
     })
     return counts
   }, [logs, getStatusNameById])
 
+  const totalLogsInRange = useMemo(() => {
+    const now = new Date()
+    let start = new Date(now)
+    const end = new Date(now)
+    end.setHours(23, 59, 59, 999)
+    if (totalRange === 'day') {
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+    } else if (totalRange === 'week') {
+      start = new Date(now)
+      start.setDate(now.getDate() - 6)
+      start.setHours(0, 0, 0, 0)
+    } else if (totalRange === 'month') {
+      start = new Date(now)
+      start.setDate(now.getDate() - 29)
+      start.setHours(0, 0, 0, 0)
+    } else if (totalRange === 'year') {
+      start = new Date(now)
+      start.setFullYear(now.getFullYear() - 1)
+      start.setHours(0, 0, 0, 0)
+    }
+    return logs.filter(r => {
+      const dt = r.visitorlogs_checkin_time ? new Date(r.visitorlogs_checkin_time) : null
+      return dt && dt >= start && dt <= end
+    }).length
+  }, [logs, totalRange])
+
+  // Chart removed per request
+  // Horizontal bar chart data for visitor statuses
+  // const statusBarData = useMemo(() => (
+  //   [
+  //     { name: 'Pending', value: stats.pending },
+  //     { name: 'Approved', value: stats.approved },
+  //     { name: 'Rejected', value: stats.rejected },
+  //     { name: 'Left', value: stats.left },
+  //   ]
+  // ), [stats])
+  // const statusColors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)']
+
   return (
     <div className="min-h-screen w-full">
       {/* Pass onCollapse so content can offset for the fixed Sidebar */}
       <AdminHeader onCollapse={setIsCollapsed} />
-      <div className={`transition-all duration-300 ${isCollapsed ? 'ml-0' : 'lg:ml-72'} px-4 md:px-6 lg:px-8 py-4`}>
+      <div className={`transition-all duration-300 ${isCollapsed ? 'ml-0' : 'lg:ml-72'} px-4 md-px-6 lg:px-8 py-4`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl md:text-2xl font-bold">Visitors Log</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-foreground">Visitors Log</h2>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleRefresh} className="gap-2">
+            <Button variant="default" onClick={handleRefresh} className="gap-2">
               <Clock className="h-4 w-4" /> Refresh
             </Button>
             <Button onClick={openAddDialog} className="gap-2">
@@ -457,22 +577,45 @@ function AdminVisitorsLog() {
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           <Card className="bg-muted/30 border-border">
-            <CardHeader className="py-3"><CardTitle className="text-sm">Total Logs</CardTitle></CardHeader>
-            <CardContent className="py-3"><div className="text-2xl font-bold">{stats.total}</div></CardContent>
+            <CardHeader className="py-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm text-foreground">Total Logs</CardTitle>
+                <Select value={String(totalRange)} onValueChange={(v) => setTotalRange(v)}>
+                  <SelectTrigger className="h-8 w-[110px] bg-muted/30 border-border">
+                    <SelectValue placeholder="Range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">Day</SelectItem>
+                    <SelectItem value="week">Week</SelectItem>
+                    <SelectItem value="month">Month</SelectItem>
+                    <SelectItem value="year">Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent className="py-3"><div className="text-2xl font-bold">{totalLogsInRange}</div></CardContent>
           </Card>
           <Card className="bg-muted/30 border-border">
-            <CardHeader className="py-3"><CardTitle className="text-sm">Pending</CardTitle></CardHeader>
+            <CardHeader className="py-3"><CardTitle className="text-sm text-foreground">Pending</CardTitle></CardHeader>
             <CardContent className="py-3"><div className="text-2xl font-bold text-yellow-600">{stats.pending}</div></CardContent>
           </Card>
           <Card className="bg-muted/30 border-border">
-            <CardHeader className="py-3"><CardTitle className="text-sm">Approved</CardTitle></CardHeader>
+            <CardHeader className="py-3"><CardTitle className="text-sm text-foreground">Approved</CardTitle></CardHeader>
             <CardContent className="py-3"><div className="text-2xl font-bold text-green-600">{stats.approved}</div></CardContent>
           </Card>
+          {/* Removed Checked-Out card as per new requirement */}
+          {/*
           <Card className="bg-muted/30 border-border">
             <CardHeader className="py-3"><CardTitle className="text-sm">Checked-Out</CardTitle></CardHeader>
             <CardContent className="py-3"><div className="text-2xl font-bold text-gray-600">{stats.checked_out}</div></CardContent>
           </Card>
+          */}
+          <Card className="bg-muted/30 border-border">
+            <CardHeader className="py-3"><CardTitle className="text-sm text-foreground">Left</CardTitle></CardHeader>
+            <CardContent className="py-3"><div className="text-2xl font-bold text-indigo-600">{stats.left}</div></CardContent>
+          </Card>
         </div>
+
 
         {/* Filters */}
         <Card className="mb-4 bg-muted/20 border-border">
@@ -520,14 +663,14 @@ function AdminVisitorsLog() {
               <Table>
                 <TableHeader className="sticky top-0 z-10">
                   <TableRow className="bg-muted/40">
-                    <TableHead>ID</TableHead>
+                    {/* Removed ID column globally */}
                     <TableHead>Visitor</TableHead>
                     <TableHead>Purpose</TableHead>
                     <TableHead>Check-in</TableHead>
                     <TableHead>Check-out</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Booking</TableHead>
-                    <TableHead>Employee</TableHead>
+                    {isAdmin && (<TableHead>Employee</TableHead>)}
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -535,27 +678,26 @@ function AdminVisitorsLog() {
                   {loading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={`sk-${i}`}>
-                        <TableCell className="w-16"><div className="h-4 w-10 bg-muted animate-pulse rounded" /></TableCell>
                         <TableCell><div className="h-4 w-40 bg-muted animate-pulse rounded" /></TableCell>
                         <TableCell><div className="h-4 w-56 bg-muted animate-pulse rounded" /></TableCell>
                         <TableCell><div className="h-4 w-40 bg-muted animate-pulse rounded" /></TableCell>
                         <TableCell><div className="h-4 w-40 bg-muted animate-pulse rounded" /></TableCell>
                         <TableCell><div className="h-6 w-24 bg-muted animate-pulse rounded" /></TableCell>
                         <TableCell><div className="h-4 w-20 bg-muted animate-pulse rounded" /></TableCell>
-                        <TableCell><div className="h-4 w-20 bg-muted animate-pulse rounded" /></TableCell>
+                        {isAdmin && (<TableCell><div className="h-4 w-20 bg-muted animate-pulse rounded" /></TableCell>)}
                         <TableCell className="text-right"><div className="h-6 w-40 bg-muted animate-pulse rounded ml-auto" /></TableCell>
                       </TableRow>
                     ))
                   ) : filteredLogs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9}>
+                      <TableCell colSpan={isAdmin ? 8 : 7}>
                         <div className="py-8 text-center text-sm text-muted-foreground">No logs found. Try adjusting filters or adding a new visitor log.</div>
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredLogs.map(row => (
                       <TableRow key={row.visitorlogs_id}>
-                        <TableCell className="w-16">{row.visitorlogs_id}</TableCell>
+                        {/* Removed ID cell globally */}
                         <TableCell className="font-medium flex items-center gap-2">
                           <UserRound className="h-4 w-4" /> {row.visitorlogs_visitorname || '—'}
                         </TableCell>
@@ -567,8 +709,14 @@ function AdminVisitorsLog() {
                             {getStatusNameById(row.visitorapproval_id)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="w-20">{row.booking_id ?? '—'}</TableCell>
-                        <TableCell className="w-20">{row.employee_id ?? '—'}</TableCell>
+                        <TableCell className="w-24">
+                          {row.booking_id ? (
+                            <Button variant="link" className="p-0 h-auto text-primary" onClick={() => openBookingPreview(row)}>
+                              {row.booking_id}
+                            </Button>
+                          ) : '—'}
+                        </TableCell>
+                        {isAdmin && (<TableCell className="w-20">{row.employee_id ?? '—'}</TableCell>)}
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => openEditDialog(row)} className="gap-1">
@@ -579,6 +727,9 @@ function AdminVisitorsLog() {
                             </Button>
                             <Button variant="outline" size="sm" onClick={() => setRowStatus(row, 'Declined')} className="gap-1">
                               <XCircle className="h-3 w-3" /> Decline
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => setRowStatus(row, 'Left')} className="gap-1">
+                              <LogOut className="h-3 w-3" /> Left
                             </Button>
                             <Button variant="outline" size="sm" onClick={() => setCheckoutNow(row)} className="gap-1">
                               <LogOut className="h-3 w-3" /> Check-Out
@@ -620,32 +771,45 @@ function AdminVisitorsLog() {
               <p className="text-[10px] text-muted-foreground mt-1">Full name of the visitor.</p>
             </div>
             <div>
-              <Label className="mb-1 block">Check-in *</Label>
+              <Label className="mb-1 block">Check-in {isPendingSelected ? '' : '*'}</Label>
               <div className="flex items-center gap-2">
                 <Input className="bg-muted/30 border-border" type="datetime-local" value={formCheckin} onChange={(e) => setFormCheckin(e.target.value)} />
-                <Button type="button" variant="outline" size="sm" onClick={setCheckinNowInForm}>Now</Button>
+                <Button type="button" variant="outline" size="sm" onClick={setCheckinNowInForm} disabled={isPendingSelected}>Now</Button>
+                <Button type="button" variant="outline" size="sm" onClick={clearCheckinInForm}>Reset</Button>
               </div>
             </div>
 
-            {/* Row 2: Booking ID centered */}
-            <div className="md:col-span-2 flex justify-center">
-              <div className="w-full md:w-1/2">
-                <Label className="mb-1 block text-center md:text-left">Booking ID *</Label>
-                <div className="flex items-center gap-2">
-                  <Input className="bg-muted/30 border-border" value={bookingDisplayLabel} readOnly onClick={handleNavigateToBookingRoomSelection} placeholder="Select booking room" />
-                  <Button type="button" variant="outline" size="sm" onClick={handleNavigateToBookingRoomSelection}>Select Booking Room</Button>
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-1 text-center md:text-left">Link a booking to auto-fill customer name.</p>
+            {/* Row 2: Booking ID and Status */}
+            <div>
+              <Label className="mb-1 block">Booking ID *</Label>
+              <div className="flex items-center gap-2">
+                <Input className="bg-muted/30 border-border" value={bookingDisplayLabel} readOnly onClick={handleNavigateToBookingRoomSelection} placeholder="Select booking room" />
+                <Button type="button" variant="outline" size="sm" onClick={handleNavigateToBookingRoomSelection}>Select Booking Room</Button>
               </div>
+              <p className="text-[10px] text-muted-foreground mt-1">Select a booking to display its customer name.</p>
+            </div>
+            <div>
+              <Label className="mb-1 block">Status *</Label>
+              <Select value={String(formStatusId)} onValueChange={(v) => setFormStatusId(v)}>
+                <SelectTrigger className="w-full bg-muted/30 border-border">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions13.map(st => (
+                    <SelectItem key={st.visitorapproval_id} value={String(st.visitorapproval_id)}>
+                      {st.visitorapproval_status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-1">Approved or Pending only.</p>
             </div>
 
-            {/* Row 3: Purpose centered */}
-            <div className="md:col-span-2 flex justify-center">
-              <div className="w-full md:w-1/2">
-                <Label className="mb-1 block text-center md:text-left">Purpose *</Label>
-                <Textarea className="bg-muted/30 border-border" value={formPurpose} onChange={(e) => setFormPurpose(e.target.value)} placeholder="Enter purpose" />
-                <p className="text-[10px] text-muted-foreground mt-1 text-center md:text-left">Reason for visit (e.g., deliver documents, site visit).</p>
-              </div>
+            {/* Row 3: Purpose */}
+            <div className="md:col-span-2">
+              <Label className="mb-1 block">Purpose *</Label>
+              <Textarea className="bg-muted/30 border-border" value={formPurpose} onChange={(e) => setFormPurpose(e.target.value)} placeholder="Enter purpose of visit" />
+              <p className="text-[10px] text-muted-foreground mt-1">Brief description of the visitor's purpose.</p>
             </div>
           </div>
 
@@ -679,5 +843,19 @@ function AdminVisitorsLog() {
     </div>
   )
 }
+
+// Helper to open booking preview
+async function openBookingPreview(row) {
+  try {
+    // Access axios and APIConn via window scope is not available; implement within component
+  } catch (e) {}
+}
+
+// Removed outdated external helper to avoid confusion
+// async function openBookingPreview(row) {
+//   try {
+//     // Access axios and APIConn via window scope is not available; implement within component
+//   } catch (e) {}
+// }
 
 export default AdminVisitorsLog

@@ -155,7 +155,7 @@ export default function OnlineReqList() {
       setState((prev) => ({
         ...prev,
         bookingId: bookingId,
-        adminId,
+        userId: adminId,
         customerName: b.customer_name || `${b.customers_lastname || ''}, ${b.customers_firstname || ''}`.trim(),
         checkIn: onlyDate(checkIn),
         checkOut: onlyDate(checkOut),

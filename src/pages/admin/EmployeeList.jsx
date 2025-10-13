@@ -186,9 +186,6 @@ function EmployeeManagement() {
   // Submit employee data to API
   const submitEmployeeData = async (payload, method) => {
     try {
-      console.log('=== SUBMITTING TO API ===');
-      console.log('Method:', method);
-      console.log('Payload:', payload);
 
       const formData = new FormData();
       formData.append('method', method);
@@ -238,29 +235,6 @@ function EmployeeManagement() {
       employee_gender: employee.employee_gender
     });
     setIsDialogOpen(true);
-  };
-
-  // Handle delete
-  const handleDelete = async (employee) => {
-    if (window.confirm(`Are you sure you want to deactivate ${employee.employee_fname} ${employee.employee_lname}?`)) {
-      try {
-        const formData = new FormData();
-        formData.append('method', 'deleteEmployee');
-        formData.append('json', JSON.stringify({ employee_id: employee.employee_id }));
-
-        const response = await axios.post(APIConn, formData);
-
-        if (response.data.status === 'success') {
-          toast.success(response.data.message);
-          fetchEmployees();
-        } else {
-          toast.error(response.data.message);
-        }
-      } catch (error) {
-        console.error('Error deleting employee:', error);
-        toast.error('Error deleting employee');
-      }
-    }
   };
 
   // Toggle Active/Inactive status

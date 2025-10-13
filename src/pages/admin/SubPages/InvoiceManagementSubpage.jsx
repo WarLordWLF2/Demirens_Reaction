@@ -37,7 +37,19 @@ function InvoiceManagementSubpage({
     invoice_status_id: 1
   });
 
-  const validateBilling = async (bookingId) => {
+  // Helper: get current logged-in employee ID from localStorage
+  const getCurrentEmployeeId = () => {
+    // Prefer employee-specific keys first, then generic user keys, admin last
+    const keys = ["employee_id", "employeeId", "userId", "user_id", "userID", "admin_id"];
+    for (const key of keys) {
+      const raw = localStorage.getItem(key);
+      if (raw && /^\d+$/.test(raw)) {
+        const id = parseInt(raw, 10);
+        if (id > 0) return id;
+      }
+    }
+    return 1; // Fallback to admin if none found
+  };  const validateBilling = async (bookingId) => {
     try {
       const url = localStorage.getItem("url") + "transactions.php";
       const formData = new FormData();
@@ -60,7 +72,7 @@ function InvoiceManagementSubpage({
       formData.append("operation", "createBillingRecord");
       formData.append("json", JSON.stringify({ 
         booking_id: bookingId,
-        employee_id: 1
+        employee_id: getCurrentEmployeeId()
       }));
       
       const res = await axios.post(url, formData);
@@ -315,7 +327,7 @@ function InvoiceManagementSubpage({
 
       const jsonData = {
         billing_ids: [billingId],
-        employee_id: 1, // Replace with session value
+        employee_id: getCurrentEmployeeId(),
         payment_method_id: invoiceForm.payment_method_id,
         invoice_status_id: invoiceForm.invoice_status_id,
         discount_id: invoiceForm.discount_id,

@@ -23,6 +23,7 @@ export default function ApprovalReceipt() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [emailStatus, setEmailStatus] = useState(null);
 
   const lineItems = useMemo(
     () =>
@@ -50,10 +51,10 @@ export default function ApprovalReceipt() {
     }));
   }, [subtotal, vat, grandTotal, downpayment, setState]);
 
-  // Ensure adminId is present in context (fallback to localStorage keys)
+  // Ensure userId is present in context (fallback to localStorage keys)
   useEffect(() => {
-    const getEffectiveAdminId = () => {
-      const keys = ["admin_id", "user_id", "userId", "userID", "employee_id", "employeeId"];
+    const getEffectiveUserId = () => {
+      const keys = ["user_id", "userId", "userID", "admin_id", "employee_id", "employeeId"];
       for (const k of keys) {
         const v = localStorage.getItem(k);
         if (v) return v;
@@ -61,17 +62,17 @@ export default function ApprovalReceipt() {
       return null;
     };
 
-    if (!state.adminId) {
-      const v = getEffectiveAdminId();
+    if (!state.userId) {
+      const v = getEffectiveUserId();
       if (v) {
-        setState((prev) => ({ ...prev, adminId: v }));
+        setState((prev) => ({ ...prev, userId: v }));
       }
     }
-  }, [state.adminId, setState]);
+  }, [state.userId, setState]);
 
   const handleConfirmClick = () => {
-    const effectiveAdminId = state.adminId || (() => {
-      const keys = ["admin_id", "user_id", "userId", "userID", "employee_id", "employeeId"];
+    const effectiveUserId = state.userId || (() => {
+      const keys = ["user_id", "userId", "userID", "admin_id", "employee_id", "employeeId"];
       for (const k of keys) {
         const v = localStorage.getItem(k);
         if (v) return v;
@@ -79,14 +80,14 @@ export default function ApprovalReceipt() {
       return null;
     })();
 
-    if (!state.adminId && effectiveAdminId) {
+    if (!state.userId && effectiveUserId) {
       // hydrate context immediately for downstream usage
-      setState((prev) => ({ ...prev, adminId: effectiveAdminId }));
+      setState((prev) => ({ ...prev, userId: effectiveUserId }));
     }
 
-    if (!bookingId || !effectiveAdminId || !state.selectedRooms?.length) {
+    if (!bookingId || !effectiveUserId || !state.selectedRooms?.length) {
       alert("Missing data to confirm approval.");
-      console.log({ bookingId, adminId: effectiveAdminId, selectedRoomsLen: state.selectedRooms?.length });
+      console.log({ bookingId, userId: effectiveUserId, selectedRoomsLen: state.selectedRooms?.length });
       return;
     }
     setShowConfirmModal(true);
@@ -95,8 +96,8 @@ export default function ApprovalReceipt() {
   const confirmApproval = async () => {
     setIsProcessing(true);
     try {
-      const effectiveAdminId = state.adminId || (() => {
-        const keys = ["admin_id", "user_id", "userId", "userID", "employee_id", "employeeId"];
+      const effectiveUserId = state.userId || (() => {
+        const keys = ["user_id", "userId", "userID", "admin_id", "employee_id", "employeeId"];
         for (const k of keys) {
           const v = localStorage.getItem(k);
           if (v) return v;
@@ -110,7 +111,7 @@ export default function ApprovalReceipt() {
         "json",
         JSON.stringify({
           booking_id: bookingId,
-          admin_id: effectiveAdminId,
+          user_id: effectiveUserId,
           room_ids: state.selectedRooms.map((r) => r.id),
           booking_totalAmount: grandTotal,
           booking_downpayment: downpayment,
@@ -120,6 +121,7 @@ export default function ApprovalReceipt() {
       const res = await axios.post(APIConn, fd);
       if (res.data?.success) {
         setShowConfirmModal(false);
+        setEmailStatus(res.data?.email_status ?? null);
         setShowSuccessModal(true);
       } else {
         alert(`Error: ${res.data?.message || "Unknown error"}`);
@@ -129,6 +131,23 @@ export default function ApprovalReceipt() {
       alert("Something went wrong while approving.");
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const emailStatusMessage = () => {
+    switch (emailStatus) {
+      case 'sent':
+        return `A confirmation email has been sent to the customer.`;
+      case 'failed':
+        return `Booking approved, but sending the confirmation email failed. Please check server logs.`;
+      case 'no_email':
+        return `Booking approved. No customer email address was available to send the confirmation.`;
+      case 'error':
+        return `Booking approved, but an error occurred while sending the email.`;
+      case 'skipped':
+        return `Booking approved. Email sending was skipped.`;
+      default:
+        return `The customer will receive a confirmation email with their booking details.`;
     }
   };
 
@@ -241,7 +260,7 @@ export default function ApprovalReceipt() {
           navigate("/admin/online");
         }}
         title="Booking Approved Successfully!"
-        message={`The booking for ${state.customerName || 'the customer'} has been approved and finalized. The customer will receive a confirmation email with their booking details.`}
+        message={`The booking for ${state.customerName || 'the customer'} has been approved and finalized. ${emailStatusMessage()}`}
         buttonText="Return to Bookings"
       />
     </>

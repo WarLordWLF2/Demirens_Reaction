@@ -223,18 +223,20 @@ function AdminDashboard() {
   const fetchActiveBookings = async () => {
     try {
       const formData = new FormData();
-      formData.append("method", "getActiveBookingsForDashboard");
+      formData.append("method", "viewBookingsCheckedInEnhanced");
 
       const res = await axios.post(APIConn, formData);
       
       if (res.data && !res.data.error) {
-        setActiveBookings(res.data);
+        // When using the enhanced list, setActiveBookings expects a count
+        const count = Array.isArray(res.data) ? res.data.length : (res.data.active_bookings_count ?? 0);
+        setActiveBookings({ active_bookings_count: count });
       } else {
-        setActiveBookings({});
+        setActiveBookings({ active_bookings_count: 0 });
       }
     } catch (error) {
       console.error("Failed to fetch active bookings:", error);
-      setActiveBookings({});
+      setActiveBookings({ active_bookings_count: 0 });
     }
   };
 
@@ -615,7 +617,7 @@ function AdminDashboard() {
                             <CardHeader className="pb-2">
                               <div className="flex items-center justify-between">
                                 <CardTitle className="text-base text-gray-900 dark:text-white">{typeName}</CardTitle>
-                                <Badge variant="secondary" className="text-xs">{total} rooms</Badge>
+                                <Badge variant="secondary" className="text-xs">Total of {total} rooms</Badge>
                               </div>
                             </CardHeader>
                             <CardContent className="pt-0">
