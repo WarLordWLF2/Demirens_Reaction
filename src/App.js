@@ -13,6 +13,7 @@ import AdminGuestProfile from './pages/admin/GuestProfile';
 import AdminPayments from './pages/admin/Payments';
 import AdminRequestedAmenities from './pages/admin/RequestedAmenities';
 import AdminBookingRoomSelection from './pages/admin/SubPages/BookingRoomSelection';
+import ChooseBookForVisitor from './pages/admin/SubPages/ChooseBookForVisitor';
 import AdminReviews from './pages/admin/Reviews';
 import AdminTransactionHis from './pages/admin/TransactionHis';
 import AdminVisitorsLog from './pages/admin/VisitorsLog';
@@ -161,6 +162,11 @@ function App() {
                 <Route path="/admin/bookingroomselection" element={
                   <AdminRouteGuard>
                     <AdminBookingRoomSelection />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/choosebookforvisitor" element={
+                  <AdminRouteGuard>
+                    <ChooseBookForVisitor />
                   </AdminRouteGuard>
                 } />
                 <Route path="/admin/reviews" element={

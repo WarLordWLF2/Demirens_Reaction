@@ -21,8 +21,7 @@ function ConfirmBooking({ open, onClose, summary, onConfirmBooking, handleClearD
 
   const subtotal = Number(subtotalRaw.toFixed(2));
 
-  const basePrice = Number((subtotal / 1.12).toFixed(2));
-  const vat = Number((subtotal - basePrice).toFixed(2));
+  // VAT removed; totals reflect subtotal only
   const downpayment = Number((subtotal / 2).toFixed(2));
   const total = subtotal;
 
@@ -109,10 +108,6 @@ function ConfirmBooking({ open, onClose, summary, onConfirmBooking, handleClearD
           <Card className="bg-white border rounded-lg shadow-sm">
             <CardContent className="py-4">
               <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">VAT (12%) included</span>
-                  <span className="font-medium">₱ {vat.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
                 <Separator />
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total</span>

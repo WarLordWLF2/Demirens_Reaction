@@ -631,7 +631,6 @@ function BookingWaccount({ rooms, selectedRoom, guestNumber: initialGuestNumber,
   const BookingSummary = () => {
     const subtotal = selectedRooms.reduce((t, r) => t + Number(r.roomtype_price) * numberOfNights, 0);
     const extraBedCharges = selectedRooms.reduce((t, r) => t + (bedCounts[r.room_type] || 0) * 420 * numberOfNights, 0);
-    const vat = subtotal - (subtotal / 1.12);
     const total = subtotal + extraBedCharges;
     const down = total * 0.5;
 
@@ -683,10 +682,6 @@ function BookingWaccount({ rooms, selectedRoom, guestNumber: initialGuestNumber,
                     </div>
                   </>
                 )}
-                <div className="flex justify-between items-center text-sm">
-                  <span>VAT (12%) included:</span>
-                  <span>₱{vat.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
                 <Separator />
                 <div className="flex justify-between items-center font-semibold">
                   <span>Total Amount:</span>
@@ -1004,7 +999,6 @@ function BookingWaccount({ rooms, selectedRoom, guestNumber: initialGuestNumber,
   const BookingConfirmationStep = () => {
     const subtotal = selectedRooms.reduce((t, r) => t + Number(r.roomtype_price) * numberOfNights, 0);
     const extraBedCharges = selectedRooms.reduce((t, r) => t + (bedCounts[r.room_type] || 0) * 420 * numberOfNights, 0);
-    const vat = subtotal - (subtotal / 1.12);
     const total = subtotal + extraBedCharges;
     const down = total * 0.5;
     const formValues = form.getValues();
@@ -1062,10 +1056,6 @@ function BookingWaccount({ rooms, selectedRoom, guestNumber: initialGuestNumber,
                   <div className="flex justify-between items-center">
                     <span>Subtotal:</span>
                     <span>₱{subtotal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>VAT (12%) included:</span>
-                    <span>₱{vat.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   {extraBedCharges > 0 && (
                     <>
