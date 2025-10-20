@@ -47,6 +47,7 @@ function AdminRequestedAmenities() {
   const [groupView, setGroupView] = useState(true);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  
 
   // Add Amenity Request Modal States
   const [addAmenityModalOpen, setAddAmenityModalOpen] = useState(false);
@@ -56,6 +57,24 @@ function AdminRequestedAmenities() {
 
   const location = useLocation();
   const APIConn = `${localStorage.url}admin.php`;
+
+  // Datetime parsing helper for 'YYYY-MM-DD HH:mm:ss' and ISO strings
+  const parseDateTime = (val) => {
+    if (!val) return null;
+    if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+    if (typeof val === 'string') {
+      const normalized = val.includes('T') ? val : val.replace(' ', 'T');
+      let d = new Date(normalized);
+      if (!isNaN(d.getTime())) return d;
+      const m = val.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+      if (m) {
+        const [_, y, mo, da, h, mi, s] = m;
+        d = new Date(Number(y), Number(mo) - 1, Number(da), Number(h), Number(mi), Number(s || 0));
+        return isNaN(d.getTime()) ? null : d;
+      }
+    }
+    return null;
+  };
 
   const fetchAmenityRequests = useCallback(async () => {
     try {
@@ -149,23 +168,7 @@ function AdminRequestedAmenities() {
       filtered = filtered.filter(request => request.request_status === activeTab);
     }
 
-    // Helper to parse dates safely
-    const parseDateTime = (val) => {
-      if (!val) return null;
-      if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
-      if (typeof val === 'string') {
-        const normalized = val.includes('T') ? val : val.replace(' ', 'T');
-        let d = new Date(normalized);
-        if (!isNaN(d.getTime())) return d;
-        const m = val.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
-        if (m) {
-          const [_, y, mo, da, h, mi, s] = m;
-          d = new Date(Number(y), Number(mo) - 1, Number(da), Number(h), Number(mi), Number(s || 0));
-          return isNaN(d.getTime()) ? null : d;
-        }
-      }
-      return null;
-    };
+    // Use shared parseDateTime defined at component scope
     const toDate = (val) => parseDateTime(val);
 
     // Date range filter
@@ -328,49 +331,23 @@ function AdminRequestedAmenities() {
     filterRequests();
   }, [filterRequests]);
 
-  // Group filtered requests by customer + booking + minute-level requested_at
+  // Group filtered requests by booking reference number (merged), track earliest and latest times
   const groupedRequests = useMemo(() => {
     if (!groupView) return [];
-
-    const parseDateTime = (val) => {
-      if (!val) return null;
-      if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
-      if (typeof val === 'string') {
-        const normalized = val.includes('T') ? val : val.replace(' ', 'T');
-        let d = new Date(normalized);
-        if (!isNaN(d.getTime())) return d;
-        const m = val.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
-        if (m) {
-          const [_, y, mo, da, h, mi, s] = m;
-          d = new Date(Number(y), Number(mo) - 1, Number(da), Number(h), Number(mi), Number(s || 0));
-          return isNaN(d.getTime()) ? null : d;
-        }
-      }
-      return null;
-    };
-
-    const minuteKey = (val) => {
-      const d = parseDateTime(val);
-      if (!d) return 'unknown';
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      const hh = String(d.getHours()).padStart(2, '0');
-      const mi = String(d.getMinutes()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
-    };
-
+  
     const map = new Map();
-    filteredRequests.forEach((req) => {
-      const tkey = minuteKey(req.requested_at);
-      const key = `${req.reference_no || 'N/A'}|${req.booking_id || ''}|${req.customer_name || ''}|${tkey}`;
+    (filteredRequests || []).forEach((req) => {
+      const ref = req.reference_no || 'N/A';
+      const key = ref; // group by booking reference number only
+      const dt = parseDateTime(req.requested_at);
+  
       if (!map.has(key)) {
         map.set(key, {
           key,
           customer_name: req.customer_name,
           customer_email: req.customer_email,
           customer_phone: req.customer_phone,
-          reference_no: req.reference_no,
+          reference_no: ref,
           booking_id: req.booking_id,
           requested_at: req.requested_at,
           requests: [req],
@@ -378,7 +355,8 @@ function AdminRequestedAmenities() {
           total_items: Number(req.request_quantity) || 0,
           status: req.request_status,
           status_mixed: false,
-          earliest_requested_at: req.requested_at
+          earliest_requested_at: req.requested_at,
+          latest_requested_at: req.requested_at
         });
       } else {
         const g = map.get(key);
@@ -386,23 +364,28 @@ function AdminRequestedAmenities() {
         g.total_amount += Number(req.request_total) || 0;
         g.total_items += Number(req.request_quantity) || 0;
         if (g.status !== req.request_status) g.status_mixed = true;
-        const cur = parseDateTime(g.earliest_requested_at);
-        const nxt = parseDateTime(req.requested_at);
-        if (!cur || (nxt && nxt < cur)) {
+  
+        const curEarliest = parseDateTime(g.earliest_requested_at);
+        const curLatest = parseDateTime(g.latest_requested_at);
+        const nxt = dt;
+        if (!curEarliest || (nxt && nxt < curEarliest)) {
           g.earliest_requested_at = req.requested_at;
+        }
+        if (!curLatest || (nxt && nxt > curLatest)) {
+          g.latest_requested_at = req.requested_at;
         }
       }
     });
-
+  
     const arr = Array.from(map.values());
     arr.sort((a, b) => {
-      const da = parseDateTime(a.earliest_requested_at);
-      const db = parseDateTime(b.earliest_requested_at);
+      const da = parseDateTime(timeSortOrder === 'desc' ? a.latest_requested_at : a.earliest_requested_at);
+      const db = parseDateTime(timeSortOrder === 'desc' ? b.latest_requested_at : b.earliest_requested_at);
       const ta = da ? da.getTime() : 0;
       const tb = db ? db.getTime() : 0;
       return timeSortOrder === 'desc' ? tb - ta : ta - tb;
     });
-
+  
     return arr;
   }, [filteredRequests, groupView, timeSortOrder]);
 
@@ -503,7 +486,7 @@ function AdminRequestedAmenities() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-      <div>
+                <div>
                   <p className="text-sm font-medium text-gray-600">Approved</p>
                   <p className="text-2xl font-bold text-green-600">{stats.approved_requests || 0}</p>
                 </div>
@@ -675,7 +658,7 @@ function AdminRequestedAmenities() {
                                 {getStatusBadge(group.status_mixed ? 'mixed' : group.status)}
                               </TableCell>
                               <TableCell>
-                                <p className="text-sm">{formatDate(group.earliest_requested_at)}</p>
+                                <p className="text-sm">{formatDate(timeSortOrder === 'desc' ? group.latest_requested_at : group.earliest_requested_at)}</p>
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-2">
@@ -930,7 +913,7 @@ function AdminRequestedAmenities() {
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Requested</Label>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">{formatDate(selectedGroup.earliest_requested_at)}</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{formatDate(timeSortOrder === 'desc' ? selectedGroup.latest_requested_at : selectedGroup.earliest_requested_at)}</p>
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Totals</Label>
@@ -939,19 +922,34 @@ function AdminRequestedAmenities() {
                       </div>
                     </div>
 
-                    <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
+                    
+
+                    <div className="overflow-x-auto overflow-y-auto max-h-[50vh]">
                       <Table className="text-gray-900 dark:text-white">
                         <TableHeader className="sticky top-0 z-20 bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
                           <TableRow>
                             <TableHead className="text-gray-700 dark:text-gray-300">Amenity</TableHead>
                             <TableHead className="text-gray-700 dark:text-gray-300">Room</TableHead>
+                            <TableHead className="text-gray-700 dark:text-gray-300">Date & Time Requested</TableHead>
                             <TableHead className="text-gray-700 dark:text-gray-300">Quantity</TableHead>
                             <TableHead className="text-gray-700 dark:text-gray-300">Price</TableHead>
                             <TableHead className="text-gray-700 dark:text-gray-300">Amount</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {selectedGroup.requests.map((req) => (
+                          {(
+                            (selectedGroup?.requests || [])
+                              .slice()
+                              .sort((a, b) => {
+                                const normA = typeof a.requested_at === 'string' && !a.requested_at.includes('T') ? a.requested_at.replace(' ', 'T') : a.requested_at;
+                                const normB = typeof b.requested_at === 'string' && !b.requested_at.includes('T') ? b.requested_at.replace(' ', 'T') : b.requested_at;
+                                const da = normA ? new Date(normA) : new Date(0);
+                                const db = normB ? new Date(normB) : new Date(0);
+                                const ta = isNaN(da.getTime()) ? 0 : da.getTime();
+                                const tb = isNaN(db.getTime()) ? 0 : db.getTime();
+                                return timeSortOrder === 'desc' ? tb - ta : ta - tb;
+                              })
+                          ).map((req) => (
                             <TableRow key={req.request_id}>
                               <TableCell className="text-gray-900 dark:text-white">
                                 <div>
@@ -965,24 +963,21 @@ function AdminRequestedAmenities() {
                                   <p className="text-sm text-gray-600 dark:text-gray-300">Room: {req.roomnumber_name}</p>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-gray-900 dark:text-white">
-                                <Badge variant="outline">{req.request_quantity}</Badge>
-                              </TableCell>
+                              <TableCell className="text-gray-900 dark:text-white">{formatDate(req.requested_at)}</TableCell>
+                              <TableCell className="text-gray-900 dark:text-white"><Badge variant="outline">{req.request_quantity}</Badge></TableCell>
                               <TableCell className="text-gray-900 dark:text-white">{formatCurrency(req.request_price)}</TableCell>
                               <TableCell className="text-gray-900 dark:text-white">{formatCurrency(req.request_total)}</TableCell>
                             </TableRow>
                           ))}
                           {/* Separator + Total row */}
                           <TableRow>
-                            <TableCell colSpan={5} className="p-0">
+                            <TableCell colSpan={6} className="p-0">
                               <div className="h-px bg-gray-200 dark:bg-gray-800"></div>
                             </TableCell>
                           </TableRow>
                           <TableRow>
-                            <TableCell className="text-right font-bold text-gray-900 dark:text-white" colSpan={4}>Total Amount</TableCell>
-                            <TableCell className="font-bold text-gray-900 dark:text-white">
-                              {formatCurrency(selectedGroup.requests.reduce((sum, req) => sum + (Number(req.request_total) || 0), 0))}
-                            </TableCell>
+                            <TableCell className="text-right font-bold text-gray-900 dark:text-white" colSpan={5}>Total Amount</TableCell>
+                            <TableCell className="font-bold text-gray-900 dark:text-white">{formatCurrency((selectedGroup?.requests || []).reduce((sum, req) => sum + (Number(req.request_total) || 0), 0))}</TableCell>
                           </TableRow>
                         </TableBody>
                       </Table>

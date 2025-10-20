@@ -1638,15 +1638,17 @@ function AdminBookingList() {
                     </div>
                     <div className="text-right">
                       {(() => {
-                        const fallbackTotal = parseFloat(selectedBooking.total_amount) || 0;
-                        const invoiceTotal = invoiceData && invoiceData.invoice_total_amount ? parseFloat(invoiceData.invoice_total_amount) : null;
-                        const effectiveTotal = (bookingChargesTotal != null)
-                          ? bookingChargesTotal
-                          : (invoiceTotal != null ? invoiceTotal : fallbackTotal);
+                        const checkInDate = new Date(selectedBooking.booking_checkin_dateandtime);
+                        const checkOutDate = new Date(selectedBooking.booking_checkout_dateandtime);
+                        const msPerDay = 1000 * 60 * 60 * 24;
+                        const x = Math.max(0, Math.ceil((checkOutDate - checkInDate) / msPerDay));
+                        const y = parseFloat(selectedBooking.roomtype_price) || 0;
+                        const z = (bookingChargesTotal != null) ? bookingChargesTotal : 0;
+                        const n = (y * x) + z;
                         return (
                           <>
                             <div className="text-2xl font-bold text-[#34699a] dark:text-[#34699a]">
-                              {NumberFormatter.formatCurrency(effectiveTotal)}
+                              {NumberFormatter.formatCurrency(n)}
                             </div>
                             <div className="text-sm text-gray-600 dark:text-gray-400">Total Amount</div>
                           </>
@@ -1729,12 +1731,14 @@ function AdminBookingList() {
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Amount</label>
                       <p className="text-gray-900 dark:text-white font-semibold">
                         {(() => {
-                          const fallbackTotal = parseFloat(selectedBooking.total_amount) || 0;
-                          const invoiceTotal = invoiceData && invoiceData.invoice_total_amount ? parseFloat(invoiceData.invoice_total_amount) : null;
-                          const effectiveTotal = (bookingChargesTotal != null)
-                            ? bookingChargesTotal
-                            : (invoiceTotal != null ? invoiceTotal : fallbackTotal);
-                          return NumberFormatter.formatCurrency(effectiveTotal);
+                          const checkInDate = new Date(selectedBooking.booking_checkin_dateandtime);
+                          const checkOutDate = new Date(selectedBooking.booking_checkout_dateandtime);
+                          const msPerDay = 1000 * 60 * 60 * 24;
+                          const x = Math.max(0, Math.ceil((checkOutDate - checkInDate) / msPerDay));
+                          const y = parseFloat(selectedBooking.roomtype_price) || 0;
+                          const z = (bookingChargesTotal != null) ? bookingChargesTotal : 0;
+                          const n = (y * x) + z;
+                          return NumberFormatter.formatCurrency(n);
                         })()}
                       </p>
                     </div>
@@ -1742,17 +1746,19 @@ function AdminBookingList() {
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Remaining Balance</label>
                         <p className="text-gray-900 dark:text-white font-semibold">
                           {(() => {
-                            const fallbackTotal = parseFloat(selectedBooking.total_amount) || 0;
-                            const invoiceTotal = invoiceData && invoiceData.invoice_total_amount ? parseFloat(invoiceData.invoice_total_amount) : null;
-                            const effectiveTotal = (bookingChargesTotal != null)
-                              ? bookingChargesTotal
-                              : (invoiceTotal != null ? invoiceTotal : fallbackTotal);
+                            const checkInDate = new Date(selectedBooking.booking_checkin_dateandtime);
+                            const checkOutDate = new Date(selectedBooking.booking_checkout_dateandtime);
+                            const msPerDay = 1000 * 60 * 60 * 24;
+                            const x = Math.max(0, Math.ceil((checkOutDate - checkInDate) / msPerDay));
+                            const y = parseFloat(selectedBooking.roomtype_price) || 0;
+                            const z = (bookingChargesTotal != null) ? bookingChargesTotal : 0;
+                            const n = (y * x) + z;
 
                             const totalPaidAmount = Array.isArray(billingData) && billingData.length > 0
                               ? billingData.reduce((sum, bill) => sum + (parseFloat(bill.billing_downpayment) || 0), 0)
                               : (parseFloat(selectedBooking.downpayment) || 0);
 
-                            const effectiveBalance = Math.max(effectiveTotal - totalPaidAmount, 0);
+                            const effectiveBalance = Math.max(n - totalPaidAmount, 0);
 
                             return NumberFormatter.formatCurrency(effectiveBalance);
                           })()}
@@ -1901,7 +1907,16 @@ function AdminBookingList() {
                               <div>
                                 <span className="text-gray-600 dark:text-gray-400">Total Bill Amount:</span>
                                 <p className="font-medium text-gray-900 dark:text-white">
-                                  {NumberFormatter.formatCurrency((bookingChargesTotal != null ? bookingChargesTotal : (parseFloat(invoiceData.invoice_total_amount) || 0)))}
+                                  {(() => {
+                                    const checkInDate = new Date(selectedBooking.booking_checkin_dateandtime);
+                                    const checkOutDate = new Date(selectedBooking.booking_checkout_dateandtime);
+                                    const msPerDay = 1000 * 60 * 60 * 24;
+                                    const x = Math.max(0, Math.ceil((checkOutDate - checkInDate) / msPerDay));
+                                    const y = parseFloat(selectedBooking.roomtype_price) || 0;
+                                    const z = (bookingChargesTotal != null) ? bookingChargesTotal : 0;
+                                    const n = (y * x) + z;
+                                    return NumberFormatter.formatCurrency(n);
+                                  })()}
                                 </p>
                               </div>
                               <div>
@@ -1915,7 +1930,18 @@ function AdminBookingList() {
                               <div className="flex justify-between items-center">
                                 <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Remaining Balance:</span>
                                 <span className="font-bold text-lg text-green-700 dark:text-green-400">
-                                  {NumberFormatter.formatCurrency(((bookingChargesTotal != null ? bookingChargesTotal : (parseFloat(invoiceData.invoice_total_amount) || 0)) - billingData.reduce((sum, bill) => sum + (parseFloat(bill.billing_downpayment) || 0), 0)))}
+                                  {(() => {
+                                    const checkInDate = new Date(selectedBooking.booking_checkin_dateandtime);
+                                    const checkOutDate = new Date(selectedBooking.booking_checkout_dateandtime);
+                                    const msPerDay = 1000 * 60 * 60 * 24;
+                                    const x = Math.max(0, Math.ceil((checkOutDate - checkInDate) / msPerDay));
+                                    const y = parseFloat(selectedBooking.roomtype_price) || 0;
+                                    const z = (bookingChargesTotal != null) ? bookingChargesTotal : 0;
+                                    const n = (y * x) + z;
+                                    const totalPaidAmount = billingData.reduce((sum, bill) => sum + (parseFloat(bill.billing_downpayment) || 0), 0);
+                                    const balance = Math.max(n - totalPaidAmount, 0);
+                                    return NumberFormatter.formatCurrency(balance);
+                                  })()}
                                 </span>
                               </div>
                             </div>
@@ -1949,9 +1975,15 @@ function AdminBookingList() {
                       );
                     } else if (hasBills) {
                       // Customer has no invoice but has bills
-                      const totalBillAmount = (bookingChargesTotal != null ? bookingChargesTotal : billingData.reduce((sum, bill) => sum + (parseFloat(bill.billing_total_amount) || 0), 0));
+                      const checkInDate = new Date(selectedBooking.booking_checkin_dateandtime);
+                      const checkOutDate = new Date(selectedBooking.booking_checkout_dateandtime);
+                      const msPerDay = 1000 * 60 * 60 * 24;
+                      const x = Math.max(0, Math.ceil((checkOutDate - checkInDate) / msPerDay));
+                      const y = parseFloat(selectedBooking.roomtype_price) || 0;
+                      const z = (bookingChargesTotal != null) ? bookingChargesTotal : 0;
+                      const n = (y * x) + z;
                       const totalPaidAmount = billingData.reduce((sum, bill) => sum + (parseFloat(bill.billing_downpayment) || 0), 0);
-                      const totalBalance = totalBillAmount - totalPaidAmount;
+                      const totalBalance = Math.max(n - totalPaidAmount, 0);
                       
                       return (
                         <div className="space-y-3">
@@ -1971,7 +2003,7 @@ function AdminBookingList() {
                               <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                                 <div>
                                   <span className="text-gray-600 dark:text-gray-400">Total Bill Amount:</span>
-                                  <p className="font-medium text-gray-900 dark:text-white">{NumberFormatter.formatCurrency(totalBillAmount)}</p>
+                                  <p className="font-medium text-gray-900 dark:text-white">{NumberFormatter.formatCurrency(n)}</p>
                                 </div>
                                 <div>
                                   <span className="text-gray-600 dark:text-gray-400">Total Paid:</span>

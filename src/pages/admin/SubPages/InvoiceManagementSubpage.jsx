@@ -757,7 +757,7 @@ function InvoiceManagementSubpage({
                                   <TableHead>Room Number</TableHead>
                                   <TableHead>Category</TableHead>
                                   <TableHead className="text-right">Unit Price</TableHead>
-                                  <TableHead className="text-center">Quantity</TableHead>
+                                  <TableHead className="text-center">Stays</TableHead>
                                   <TableHead className="text-right">Total</TableHead>
                                   <TableHead>Description</TableHead>
                                 </TableRow>
