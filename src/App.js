@@ -11,12 +11,13 @@ import AdminBookingList from './pages/admin/BookingList';
 import AdminCalendar from './pages/admin/Calendar';
 import AdminGuestProfile from './pages/admin/GuestProfile';
 import AdminPayments from './pages/admin/Payments';
-import AdminRequestedAmenities from './pages/admin/RequestedAmenities';
-import AdminBookingRoomSelection from './pages/admin/SubPages/BookingRoomSelection';
-import ChooseBookForVisitor from './pages/admin/SubPages/ChooseBookForVisitor';
+import AdminRequestedAmenities from './pages/admin/Amenity Pages/RequestedAmenities';
+import AdminBookingRoomSelection from './pages/admin/Amenity Pages/BookingRoomSelection';
+import AmenitySelection from './pages/admin/Amenity Pages/AmenitySelection';
+import ChooseBookForVisitor from './pages/admin/Visitor Pages/ChooseBookForVisitor';
 import AdminReviews from './pages/admin/Reviews';
 import AdminTransactionHis from './pages/admin/TransactionHis';
-import AdminVisitorsLog from './pages/admin/VisitorsLog';
+import AdminVisitorsLog from './pages/admin/Visitor Pages/VisitorsLog';
 import AdminAmenityMaster from './pages/admin/Master_Files/AmenityMaster';
 import AdminChargesCategory from './pages/admin/Master_Files/ChargesCategory';
 import AdminChargeMaster from './pages/admin/Master_Files/ChargeMaster';
@@ -159,6 +160,11 @@ function App() {
                     <AdminRequestedAmenities />
                   </AdminRouteGuard>
                 } />
+                <Route path="/admin/amenityselection" element={
+                  <AdminRouteGuard>
+                    <AmenitySelection />
+                  </AdminRouteGuard>
+                } />
                 <Route path="/admin/bookingroomselection" element={
                   <AdminRouteGuard>
                     <AdminBookingRoomSelection />
@@ -276,7 +282,6 @@ function App() {
                 <Route path="/customer/gallery" element={<CustomerGallery />} />
                 <Route path="/customer/restaurant" element={<CustomerRestaurant />} />
                 <Route path="/customer" element={<CustomerMain />} />
-
 
               </Routes>
             </ApprovalProvider>

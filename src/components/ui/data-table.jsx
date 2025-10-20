@@ -1,10 +1,25 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { ChevronsUpDown } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronsUpDown } from "lucide-react";
 
 const DataTable = ({
   columns,
@@ -32,12 +47,7 @@ const DataTable = ({
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
   const [selectedRows, setSelectedRows] = useState(new Set());
 
-  // Safely read values from a row using an accessor (string or function)
-  const getCellValue = (row, accessor) => {
-    if (!row) return '';
-    const value = typeof accessor === 'function' ? accessor(row) : row?.[accessor];
-    return value ?? '';
-  };
+  const isMobile = windowWidth < 768;
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -45,68 +55,60 @@ const DataTable = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const sortedData = useMemo(() => {
-    const base = Array.isArray(data) ? data.filter(Boolean) : [];
-    if (!sortColumn) return base;
-
-    const sorted = [...base].sort((a, b) => {
-      const valA = getCellValue(a, sortColumn);
-      const valB = getCellValue(b, sortColumn);
-
-      // Numeric comparison when both are numbers
-      if (typeof valA === 'number' && typeof valB === 'number') {
-        return sortOrder === 'asc' ? valA - valB : valB - valA;
-      }
-
-      // Fallback to string comparison (case-insensitive)
-      const aStr = String(valA).toLowerCase();
-      const bStr = String(valB).toLowerCase();
-      const cmp = aStr.localeCompare(bStr);
-      return sortOrder === 'asc' ? cmp : -cmp;
-    });
-
-    return sorted;
-  }, [data, sortColumn, sortOrder]);
-
-  const filteredData = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return sortedData;
-
-    return sortedData.filter(item =>
-      columns.some(column => {
-        if (!column.accessor) return false;
-        const value = getCellValue(item, column.accessor);
-        return String(value).toLowerCase().includes(term);
-      })
-    );
-  }, [sortedData, columns, searchTerm]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filteredData.length]);
-
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
-
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(Math.max(1, Math.min(pageNumber, totalPages)));
-  };
-
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
   };
 
-  const handleSort = (column) => {
-    if (sortColumn === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortOrder('asc');
+  const handleSort = (accessor) => {
+    const newSortOrder = sortColumn === accessor && sortOrder === 'asc' ? 'desc' : 'asc';
+    setSortColumn(accessor);
+    setSortOrder(newSortOrder);
+  };
+
+  const filteredData = useMemo(() => {
+    if (!data) return [];
+    const lowerSearchTerm = searchTerm.toLowerCase();
+
+    return data
+      .filter((row) =>
+        columns.some((column) => {
+          const value = typeof column.accessor === 'function'
+            ? column.accessor(row)
+            : row[column.accessor];
+          return String(value || '')
+            .toLowerCase()
+            .includes(lowerSearchTerm);
+        })
+      )
+      .sort((a, b) => {
+        if (!sortColumn) return 0;
+        const aValue = typeof sortColumn === 'function' ? sortColumn(a) : a[sortColumn];
+        const bValue = typeof sortColumn === 'function' ? sortColumn(b) : b[sortColumn];
+
+        if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+  }, [data, columns, searchTerm, sortColumn, sortOrder]);
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = filteredData.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+  };
+
+  const truncateText = (text, index) => {
+    if (limitNumberWords === true) {
+      const maxWords = 15; //caps words to display on table
+      const words = String(text ?? '').split(' ');
+      return words.length > maxWords ? words.slice(0, maxWords).join(' ') + '…' : text;
     }
+    return text;
   };
 
   const handleRowSelect = (rowIdentifier) => {
@@ -117,18 +119,18 @@ const DataTable = ({
       newSelectedRows.add(rowIdentifier);
     }
     setSelectedRows(newSelectedRows);
-    selectedData(Array.from(newSelectedRows).map(id => data.find(row => (idAccessor ? row[idAccessor] : row) === id)));
+    selectedData && selectedData(Array.from(newSelectedRows).map(id => data.find(row => (idAccessor ? row[idAccessor] : row) === id)));
   };
 
   const handleSelectAll = () => {
     if (selectedRows.size === currentItems.filter(Boolean).length) {
       setSelectedRows(new Set());
-      console.log("Selected data: []");
+      if (selectedData) selectedData([]);
     } else {
       const rowsToSelect = currentItems.filter(Boolean);
       const newSelectedRows = new Set(rowsToSelect.map(row => (idAccessor ? row?.[idAccessor] : row)));
       setSelectedRows(newSelectedRows);
-      selectedData(Array.from(newSelectedRows).map(id => data.find(row => (idAccessor ? row?.[idAccessor] : row) === id)));
+      selectedData && selectedData(Array.from(newSelectedRows).map(id => data.find(row => (idAccessor ? row?.[idAccessor] : row) === id)));
     }
   };
 
@@ -192,10 +194,6 @@ const DataTable = ({
         );
       }
 
-      if (end < totalPages - 1) {
-        items.push(<PaginationEllipsis key="ellipsis-end" />);
-      }
-
       items.push(
         <PaginationItem key={totalPages}>
           <PaginationLink
@@ -211,28 +209,6 @@ const DataTable = ({
 
     return items;
   };
-
-  const isMobile = windowWidth < 640;
-
-  const truncateText = (text, maxLength = 50) => {
-    if (typeof text !== 'string') return text;
-    if (!limitNumberWords || text.length <= maxLength) return text;
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>
-            <span>{text.slice(0, maxLength)}...</span>
-          </TooltipTrigger>
-          <TooltipContent>
-            <div className="max-w-xs max-h-56 overflow-y-auto whitespace-pre-wrap text-sm p-2">
-              {text}
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  };
-
 
   return (
     <div>
@@ -274,16 +250,6 @@ const DataTable = ({
                   {autoIndex && <TableHead>#</TableHead>}
                   {columns.map((column, index) =>
                     (!isMobile || !column.hiddenOnMobile) && (
-                      // <TableHead
-                      //   key={index}
-                      //   onClick={() => column.sortable && handleSort(column.accessor)}
-                      //   className={column.sortable ? 'cursor-pointer' : ''}
-                      // >
-                      //   <div className="flex items-center gap-1">
-                      //     {column.header}
-                      //     {column.sortable && <ChevronsUpDown className="h-4 w-4" />}
-                      //   </div>
-                      // </TableHead>
                       <TableHead
                         key={index}
                         onClick={() => column.sortable && handleSort(column.accessor)}
@@ -302,13 +268,18 @@ const DataTable = ({
                 {currentItems.map((row, rowIndex) => {
                   if (!row) return null;
                   const rowIdentifier = idAccessor ? row[idAccessor] : row;
+                  const isRowSelected = selectedRows.has(rowIdentifier);
                   return (
                     <TableRow
                       key={rowIndex}
                       onClick={() => {
-                        if (onRowClick) onRowClick(rowIdentifier);
+                        if (isSelectable) {
+                          handleRowSelect(rowIdentifier);
+                        } else if (onRowClick) {
+                          onRowClick(rowIdentifier);
+                        }
                       }}
-                      className={onRowClick ? 'cursor-pointer' : ''}
+                      className={`${(isSelectable || onRowClick) ? 'cursor-pointer' : ''} ${isSelectable && isRowSelected ? 'bg-muted/40' : ''}`}
                     >
                       {isSelectable && (
                         <TableCell>
@@ -334,45 +305,44 @@ const DataTable = ({
                               column.cell
                                 ? column.cell(row, (currentPage - 1) * itemsPerPage + rowIndex)
                                 : column.additionalAccessor
-                                  ? typeof column.additionalAccessor === 'function'
-                                    ? column.additionalAccessor(row)
-                                    : `${getCellValue(row, column.accessor)}${column.additionalAccessor}`
-                                  : getCellValue(row, column.accessor)
-                            )}
-
+                                  ? column.additionalAccessor(row)
+                                  : typeof column.accessor === 'function'
+                                    ? column.accessor(row)
+                                    : row[column.accessor]
+                            , rowIndex)}
                           </TableCell>
                         )
                       )}
-
                     </TableRow>
                   );
                 })}
               </TableBody>
             </Table>
           </div>
-          {totalPages >= 2 && (
-            <div className="overflow-x-auto">
-              <Pagination className="mt-4">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      className="cursor-pointer"
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    />
-                  </PaginationItem>
-                  {renderPaginationItems()}
-                  <PaginationItem>
-                    <PaginationNext
-                      className="cursor-pointer"
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+          <div className="flex items-center justify-between py-4">
+            <div className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages || 1}
             </div>
-          )}
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    className="cursor-pointer"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  />
+                </PaginationItem>
+                {renderPaginationItems()}
+                <PaginationItem>
+                  <PaginationNext
+                    className="cursor-pointer"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
         </>
       ) : (
         <div className="text-center py-4">No data found

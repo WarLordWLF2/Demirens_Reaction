@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// This page is for booking room selection in Amenities
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +21,7 @@ import {
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 function AdminBookingRoomSelection() {
   const [bookingRooms, setBookingRooms] = useState([]);
@@ -202,6 +205,27 @@ function AdminBookingRoomSelection() {
     fetchActiveVisitorsMap();
   }, [fetchBookingRooms, fetchActiveVisitorsMap]);
 
+  // Group rooms by reference number for a compact, clearer display
+  const groupedRooms = useMemo(() => {
+    const groups = {};
+    filteredRooms.forEach(room => {
+      const ref = room.reference_no || room.booking_id || 'N/A';
+      if (!groups[ref]) {
+        groups[ref] = {
+          reference_no: ref,
+          customer_name: room.customer_name,
+          customers_email: room.customers_email,
+          customers_phone: room.customers_phone,
+          booking_checkin_dateandtime: room.booking_checkin_dateandtime,
+          booking_checkout_dateandtime: room.booking_checkout_dateandtime,
+          rooms: []
+        };
+      }
+      groups[ref].rooms.push(room);
+    });
+    return Object.values(groups);
+  }, [filteredRooms]);
+
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     
@@ -327,15 +351,175 @@ function AdminBookingRoomSelection() {
       return !(max > 0 && current >= max);
     });
     if (selectedRooms.length === selectableRooms.length) {
-      // Deselect all
       setSelectedRooms([]);
       console.log('🏨 Deselected all rooms');
     } else {
-      // Select all
       setSelectedRooms([...selectableRooms]);
       console.log('🏨 Selected all rooms (excluding full capacity):', selectableRooms.length);
     }
   };
+
+  // Define columns for DataTable
+  const columns = useMemo(() => [
+    {
+      header: 'Reference',
+      accessor: (row) => row?.reference_no || '—',
+      sortable: true,
+      headerClassName: 'min-w-[140px]'
+    },
+    {
+      header: 'Customer',
+      accessor: (row) => row?.customer_name || '—',
+      sortable: true,
+      cell: (row) => (
+        <div className="space-y-1">
+          <p className="font-medium text-gray-900 dark:text-white">{row.customer_name}</p>
+          <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+            <Users className="h-3 w-3" />
+            {(Number(row.bookingRoom_adult || 0) + Number(row.bookingRoom_children || 0))} guests
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Contact',
+      accessor: (row) => row?.customers_email || row?.customers_phone || '—',
+      sortable: false,
+      cell: (row) => (
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+            <Mail className="h-3 w-3" />
+            {row.customers_email}
+          </div>
+          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+            <Phone className="h-3 w-3" />
+            {row.customers_phone}
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Room Details',
+      accessor: (row) => row?.roomnumber_id || 0,
+      sortable: true,
+      cell: (row) => (
+        <div className="space-y-1">
+          <div className="flex items-center gap-1">
+            <Building className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <span className="font-medium text-gray-900 dark:text-white">
+              Room #{row.roomnumber_id}
+            </span>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-300">{row.roomtype_name}</p>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">
+              Floor {row.roomfloor}
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(row.roomtype_price)}/night
+            </Badge>
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Current Capacity',
+      accessor: (row) => {
+        const adults = Number(row.bookingRoom_adult || 0);
+        const children = Number(row.bookingRoom_children || 0);
+        const visitors = Number(activeVisitorsMap[row.booking_id] || 0);
+        return adults + children + visitors;
+      },
+      sortable: true,
+      cell: (row) => {
+        const adults = Number(row.bookingRoom_adult || 0);
+        const children = Number(row.bookingRoom_children || 0);
+        const visitors = Number(activeVisitorsMap[row.booking_id] || 0);
+        return (
+          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+            <Users className="h-3 w-3" />
+            {`${adults + children + visitors}/${Number(row.max_capacity || 0)}`}
+          </div>
+        );
+      }
+    },
+    {
+      header: 'Check-in',
+      accessor: (row) => row?.booking_checkin_dateandtime || '',
+      sortable: true,
+      cell: (row) => (
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+            <Calendar className="h-3 w-3" />
+            {formatDate(row.booking_checkin_dateandtime)}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Check-out: {formatDate(row.booking_checkout_dateandtime)}
+          </p>
+        </div>
+      )
+    },
+    {
+      header: 'Status',
+      accessor: (row) => row?.booking_status_name || '—',
+      sortable: true,
+      cell: (row) => (
+        <Badge 
+          variant="outline" 
+          className={`${
+            row.booking_status_name === 'Approved' 
+              ? 'border-green-500 text-green-700 dark:text-green-400' 
+              : row.booking_status_name === 'Checked-In'
+              ? 'border-blue-500 text-blue-700 dark:text-blue-400'
+              : 'border-gray-500 text-gray-700 dark:text-gray-400'
+          }`}
+        >
+          {row.booking_status_name}
+        </Badge>
+      )
+    },
+    {
+      header: 'Actions',
+      accessor: 'action',
+      cell: (row) => {
+        const adults = Number(row.bookingRoom_adult || 0);
+        const children = Number(row.bookingRoom_children || 0);
+        const visitors = Number(activeVisitorsMap[row.booking_id] || 0);
+        const current = adults + children + visitors;
+        const max = Number(row.max_capacity || 0);
+        const isFull = max > 0 && current >= max;
+        const isSelected = selectedRooms.some(s => s.booking_room_id === row.booking_room_id);
+        return (
+          <Button
+            size="sm"
+            variant={isSelected ? 'default' : 'outline'}
+            disabled={isFull}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isFull) return;
+              handleRoomSelect(row);
+            }}
+            className={`min-w-[100px] transition-all duration-200 ${
+              isFull
+                ? 'bg-red-600 hover:bg-red-700 text-white cursor-not-allowed opacity-90'
+                : isSelected 
+                ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg' 
+                : 'hover:bg-blue-50 dark:hover:bg-blue-900/20'
+            }`}
+          >
+            {isFull ? 'Full Capacity' : isSelected ? (
+              <>
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Selected
+              </>
+            ) : 'Select'}
+          </Button>
+        );
+      },
+      headerClassName: 'text-right',
+      className: 'text-right'
+    }
+  ], [activeVisitorsMap, selectedRooms]);
 
   if (loading) {
     return (
@@ -397,7 +581,7 @@ function AdminBookingRoomSelection() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {filteredRooms.length}
+              {groupedRooms.length}
             </div>
           </CardContent>
         </Card>
@@ -467,7 +651,7 @@ function AdminBookingRoomSelection() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {selectedRooms.map((room, index) => (
+              {selectedRooms.map((room) => (
                 <div key={room.booking_room_id} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-800">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -508,7 +692,7 @@ function AdminBookingRoomSelection() {
         </Card>
       )}
 
-      {/* Booking Rooms Table */}
+      {/* Booking Rooms Table with Pagination */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -528,7 +712,14 @@ function AdminBookingRoomSelection() {
                   onClick={handleSelectAll}
                   className="text-xs"
                 >
-                  {selectedRooms.length === filteredRooms.length ? 'Deselect All' : 'Select All'}
+                  {selectedRooms.length === filteredRooms.filter(r => {
+                    const adults = Number(r.bookingRoom_adult ?? 0);
+                    const children = Number(r.bookingRoom_children ?? 0);
+                    const visitors = Number(activeVisitorsMap[r.booking_id] ?? 0);
+                    const current = adults + children + visitors;
+                    const max = Number(r.max_capacity ?? 0);
+                    return !(max > 0 && current >= max);
+                  }).length ? 'Deselect All' : 'Select All'}
                 </Button>
               )}
             </div>
@@ -538,198 +729,115 @@ function AdminBookingRoomSelection() {
           </p>
         </CardHeader>
         <CardContent>
-          {filteredRooms.length === 0 ? (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              <Building className="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
-              <p className="font-medium text-lg mb-2 text-gray-700 dark:text-gray-300">
-                {searchTerm ? 'No rooms found matching your search' : 'No booking rooms available'}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {searchTerm ? 'Try adjusting your search terms' : 'Check back later for new bookings'}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <div className="flex items-center justify-center">
-                        {!isVisitorOrigin ? (
-                          <input
-                            type="checkbox"
-                            checked={selectedRooms.length === filteredRooms.length && filteredRooms.length > 0}
-                            onChange={handleSelectAll}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                          />
-                        ) : (
-                          <div className="w-4 h-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead>Reference</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Room Details</TableHead>
-                    <TableHead>Current Capacity</TableHead>
-                    <TableHead>Check-in</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRooms.map((room) => {
-                    const isSelected = selectedRooms.some(selected => selected.booking_room_id === room.booking_room_id);
-                    const adults = Number(room.bookingRoom_adult || 0);
-                    const children = Number(room.bookingRoom_children || 0);
-                    const visitors = Number(activeVisitorsMap[room.booking_id] || 0);
-                    const current = adults + children + visitors;
-                    const max = Number(room.max_capacity || 0);
-                    const isFull = max > 0 && current >= max;
-                    
-                    return (
-                      <TableRow 
-                        key={room.booking_room_id}
-                        className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 ${
-                          isSelected 
-                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 shadow-sm' 
-                            : ''
-                        } ${isFull ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
-                        onClick={() => {
-                          if (isFull) {
-                            toast.error('This room is at full capacity and cannot be selected.');
-                            return;
-                          }
-                          handleRoomSelect(room);
-                        }}
-                      >
-                        <TableCell>
-                          <div className="flex items-center justify-center">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              disabled={isFull}
-                              onChange={() => handleRoomSelect(room)}
-                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </div>
-                        </TableCell>
+          {/* Grouped-by-reference table with multi-select actions */}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Reference</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Check-in</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {groupedRooms.map((group) => {
+                  const isGroupSelected = selectedRooms.some(sr => group.rooms.some(r => r.booking_room_id === sr.booking_room_id));
+                  return (
+                    <TableRow
+                      key={group.reference_no}
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200 ${
+                        isGroupSelected ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 shadow-sm' : ''
+                      }`}
+                    >
                       <TableCell>
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-white">{room.reference_no}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">ID: {room.booking_id}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{group.reference_no}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Group of {group.rooms.length} rooms</p>
                         </div>
                       </TableCell>
                       <TableCell>
+                        <p className="font-medium text-gray-900 dark:text-white">{group.customer_name}</p>
+                      </TableCell>
+                      <TableCell>
                         <div className="space-y-1">
-                          <p className="font-medium text-gray-900 dark:text-white">{room.customer_name}</p>
-                          <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-                            <Users className="h-3 w-3" />
-                            {room.bookingRoom_adult + room.bookingRoom_children} guests
+                          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+                            <Mail className="h-3 w-3" /> {group.customers_email}
+                          </div>
+                          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+                            <Phone className="h-3 w-3" /> {group.customers_phone}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-                            <Mail className="h-3 w-3" />
-                            {room.customers_email}
+                            <Calendar className="h-3 w-3" /> {formatDate(group.booking_checkin_dateandtime)}
                           </div>
-                          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-                            <Phone className="h-3 w-3" />
-                            {room.customers_phone}
-                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Check-out: {formatDate(group.booking_checkout_dateandtime)}</p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
-                            <Building className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              Room #{room.roomnumber_id}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">{room.roomtype_name}</p>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">
-                              Floor {room.roomfloor}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              {formatCurrency(room.roomtype_price)}/night
-                            </Badge>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-                            <Users className="h-3 w-3" />
-                            {`${Number(room.bookingRoom_adult || 0) + Number(room.bookingRoom_children || 0) + Number(activeVisitorsMap[room.booking_id] || 0)}/${Number(room.max_capacity || 0)}`}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
-                            <Calendar className="h-3 w-3" />
-                            {formatDate(room.booking_checkin_dateandtime)}
-                          </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Check-out: {formatDate(room.booking_checkout_dateandtime)}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant="outline" 
-                          className={`${
-                            room.booking_status_name === 'Approved' 
-                              ? 'border-green-500 text-green-700 dark:text-green-400' 
-                              : room.booking_status_name === 'Checked-In'
-                              ? 'border-blue-500 text-blue-700 dark:text-blue-400'
-                              : 'border-gray-500 text-gray-700 dark:text-gray-400'
-                          }`}
-                        >
-                          {room.booking_status_name}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant={isSelected ? "default" : "outline"}
-                          disabled={isFull}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!isFull) handleRoomSelect(room);
-                          }}
-                          className={`min-w-[100px] transition-all duration-200 ${
-                            isFull
-                              ? 'bg-red-600 hover:bg-red-700 text-white cursor-not-allowed opacity-90'
-                              : isSelected 
-                              ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg' 
-                              : 'hover:bg-blue-50 dark:hover:bg-blue-900/20'
-                          }`}
-                        >
-                          {isFull ? (
-                            'Full Capacity'
-                          ) : isSelected ? (
-                            <>
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Selected
-                            </>
-                          ) : (
-                            'Select'
-                          )}
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant={isGroupSelected ? 'default' : 'outline'}
+                              className="min-w-[120px]"
+                            >
+                              {isGroupSelected ? (
+                                <>
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Selected
+                                </>
+                              ) : 'Select Rooms'}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-[280px]">
+                            <DropdownMenuLabel>Select rooms</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {group.rooms.map((room) => {
+                              const adults = Number(room.bookingRoom_adult ?? 0);
+                              const children = Number(room.bookingRoom_children ?? 0);
+                              const visitors = Number(activeVisitorsMap[room.booking_id] ?? 0);
+                              const current = adults + children + visitors;
+                              const max = Number(room.max_capacity ?? 0);
+                              const isFull = max > 0 && current >= max;
+                              const isSelectedRoom = selectedRooms.some(s => s.booking_room_id === room.booking_room_id);
+                              return (
+                                <DropdownMenuItem
+                                  key={room.booking_room_id}
+                                  disabled={isFull}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isFull) return;
+                                    handleRoomSelect(room);
+                                  }}
+                                  className={`${isSelectedRoom ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
+                                >
+                                  <div className="flex items-center gap-2 w-full">
+                                    <div>
+                                      <p className="font-medium text-gray-900 dark:text-white">#{room.roomnumber_id}</p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">{room.roomtype_name}</p>
+                                    </div>
+                                    <span className="ml-auto text-xs text-gray-500">
+                                      {max ? `${current}/${max}` : `${current}`}
+                                    </span>
+                                    {isSelectedRoom && <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />}
+                                  </div>
+                                </DropdownMenuItem>
+                              );
+                            })}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
