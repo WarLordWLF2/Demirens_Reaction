@@ -20,7 +20,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import axios from 'axios'
 import { toast } from 'sonner'
 
 function Sidebar({ onCollapse }) {
@@ -127,51 +126,17 @@ function Sidebar({ onCollapse }) {
   }, [navigate])
 
   // Logout function
-  const handleLogout = useCallback(async () => {
+  const handleLogout = useCallback(() => {
     try {
-      const userId = localStorage.getItem('userId')
-      const userTypeRaw = localStorage.getItem('userType') || ''
-      const userLevelRaw = localStorage.getItem('userLevel') || ''
-      const normalizedType = userTypeRaw.toLowerCase()
-      const normalizedLevel = userLevelRaw.toLowerCase()
+      // Clear local auth state regardless of backend
+      localStorage.removeItem('userId')
+      localStorage.removeItem('fname')
+      localStorage.removeItem('lname')
+      localStorage.removeItem('userType')
+      localStorage.removeItem('userLevel')
 
-      // Allow Admin and Front Desk/Employee to logout
-      const isAuthorized =
-        ['admin', 'employee', 'frontdesk', 'front-desk'].includes(normalizedType) ||
-        ['admin', 'frontdesk', 'front-desk'].includes(normalizedLevel)
-
-      if (!userId || !isAuthorized) {
-        toast.error('Employee or Admin access required')
-        navigate('/employee/login')
-        return
-      }
-
-      const APIConn = localStorage.getItem('url') + "admin.php"
-      const formData = new FormData()
-      formData.append('method', 'logout')
-      const userTypeForApi =
-        normalizedType === 'frontdesk' || normalizedType === 'front-desk' ? 'employee' : (normalizedType || 'employee')
-      formData.append('json', JSON.stringify({
-        employee_id: userId,
-        user_type: userTypeForApi
-      }))
-
-      const response = await axios.post(APIConn, formData)
-      console.log('Logout Response:', response.data)
-
-      if (response.data.success) {
-        // Clear localStorage
-        localStorage.removeItem('userId')
-        localStorage.removeItem('fname')
-        localStorage.removeItem('lname')
-        localStorage.removeItem('userType')
-        localStorage.removeItem('userLevel')
-
-        toast.success('Successfully logged out')
-        navigate('/employee/login')
-      } else {
-        toast.error(response.data.message || 'Logout failed')
-      }
+      toast.success('Successfully logged out')
+      navigate('/employee/login')
     } catch (error) {
       console.error('Logout error:', error)
       toast.error('Error during logout')

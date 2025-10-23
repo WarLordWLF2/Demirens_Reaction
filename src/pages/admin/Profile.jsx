@@ -143,24 +143,27 @@ function AdminProfile() {
       const response = await axios.post(APIConn, formData);
       console.log('Admin Profile Response:', response.data);
 
-      if (response.data.status === 'success') {
-        setAdminData(response.data.data);
+      // Robustly parse JSON responses (string or object) and accept success/status
+      const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+
+      if ((data?.status === 'success' || data?.success === true) && data?.data) {
+        setAdminData(data.data);
         // Initialize edit form with current data
         setEditData({
-          employee_fname: response.data.data.employee_fname || '',
-          employee_lname: response.data.data.employee_lname || '',
-          employee_username: response.data.data.employee_username || '',
-          employee_email: response.data.data.employee_email || '',
-          employee_phone: response.data.data.employee_phone || '',
-          employee_address: response.data.data.employee_address || '',
-          employee_birthdate: response.data.data.employee_birthdate || '',
-          employee_gender: response.data.data.employee_gender || '',
+          employee_fname: data.data.employee_fname || '',
+          employee_lname: data.data.employee_lname || '',
+          employee_username: data.data.employee_username || '',
+          employee_email: data.data.employee_email || '',
+          employee_phone: data.data.employee_phone || '',
+          employee_address: data.data.employee_address || '',
+          employee_birthdate: data.data.employee_birthdate || '',
+          employee_gender: data.data.employee_gender || '',
           current_password: '',
           new_password: '',
           confirm_password: ''
         });
       } else {
-        toast.error(response.data.message || 'Failed to fetch admin data');
+        toast.error(data?.message || 'Failed to fetch admin data');
       }
     } catch (error) {
       console.error('Error fetching admin data:', error);
@@ -245,12 +248,15 @@ function AdminProfile() {
       const response = await axios.post(APIConn, formData);
       console.log('Update Profile Response:', response.data);
 
-      if (response.data.status === 'success') {
+      // Robustly parse JSON responses (string or object) and accept success/status
+      const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+
+      if (data?.status === 'success' || data?.success === true) {
         toast.success('Profile updated successfully');
         setIsEditModalOpen(false);
         fetchAdminData(); // Refresh data
       } else {
-        toast.error(response.data.message || 'Failed to update profile');
+        toast.error(data?.message || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Error updating profile:', error);

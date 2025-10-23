@@ -4,7 +4,7 @@ import axios from 'axios'
 import CustomerPayment from './SubPages/CustomerPayment'
 import DataTable from '@/components/ui/data-table'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
+
 import {
  DropdownMenu,
  DropdownMenuContent,
@@ -31,7 +31,7 @@ const Billings = () => {
  const getBookings = async () => {
   setLoading(true)
   const formData = new FormData()
-  formData.append('method', 'viewBookings')
+ formData.append('method', 'viewBookingsEnhanced')
 
   try {
    const res = await axios.post(APIConn, formData)
@@ -295,15 +295,14 @@ const Billings = () => {
          </div>
         </div>
        ) : (
-        <ScrollArea className="h-[calc(100vh-350px)] w-full">
+        <div className="overflow-auto max-h-[calc(100vh-350px)] w-full">
          <DataTable 
           columns={columns} 
           data={filteredBookings} 
           itemsPerPage={7} 
-          autoIndex 
-          className="dark:text-gray-100"
+          className="dark:text-gray-100 min-w-[1000px]"
          />
-        </ScrollArea>
+        </div>
        )}
       </div>
      </div>

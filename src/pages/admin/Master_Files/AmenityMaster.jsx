@@ -26,7 +26,8 @@ import {
 import { ArrowDownUp, FilePlus2, ListOrdered, Pencil, Trash, Search, Filter, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 
 function AmenityMaster() {
-  const APIConn = `${localStorage.url}admin.php`;
+  const baseUrl = (typeof window !== 'undefined' && window.localStorage) ? (localStorage.getItem('url') || `${window.location.origin}/`) : '';
+  const APIConn = `${baseUrl}admin.php`;
 
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);

@@ -99,7 +99,7 @@ function AdminRoomsList() {
   const getRooms = async () => {
     setIsLoading(true)
     const formData = new FormData()
-    formData.append("method", "viewRooms")
+    formData.append("method", "viewAllRooms")
 
     try {
       const conn = await axios.post(APIConn, formData)
@@ -160,7 +160,7 @@ function AdminRoomsList() {
       const roomTypesArray = Object.values(groupedRooms)
       setRoomTypes(roomTypesArray)
     }
-  }, [rooms])
+  }, [rooms, roomTypeImagesMap])
 
   // Normalize image payload from API to an array of filenames
   const toImagesArray = (images) => {

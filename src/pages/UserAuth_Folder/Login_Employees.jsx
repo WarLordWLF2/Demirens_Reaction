@@ -26,6 +26,45 @@ function EmployeeLogin() {
     const [userInput, setUserInput] = useState("");
     const navigateTo = useNavigate();
 
+    // Login attempt lock configuration and state
+    const MAX_ATTEMPTS = 3;
+    const LOCK_SECONDS = 30;
+    const lockKey = 'employeeLoginLock';
+    const [attempts, setAttempts] = useState(0);
+    const [isLocked, setIsLocked] = useState(false);
+    const [lockRemaining, setLockRemaining] = useState(0);
+
+    const startLockCountdown = (lockUntil) => {
+        const tick = () => {
+            const now = Date.now();
+            if (now >= lockUntil) {
+                setIsLocked(false);
+                setLockRemaining(0);
+                localStorage.removeItem(lockKey);
+                clearInterval(window.__employeeLockTimer);
+            } else {
+                setLockRemaining(Math.ceil((lockUntil - now) / 1000));
+            }
+        };
+        clearInterval(window.__employeeLockTimer);
+        window.__employeeLockTimer = setInterval(tick, 1000);
+        tick();
+    };
+
+    useEffect(() => {
+        const raw = localStorage.getItem(lockKey);
+        if (!raw) return;
+        try {
+            const { lockUntil, attempts: storedAttempts } = JSON.parse(raw);
+            if (lockUntil && Date.now() < lockUntil) {
+                setAttempts(storedAttempts || MAX_ATTEMPTS);
+                setIsLocked(true);
+                startLockCountdown(lockUntil);
+            } else {
+                localStorage.removeItem(lockKey);
+            }
+        } catch {}
+    }, []);
     const getRandomColor = () => {
         const colors = ["red", "blue", "green", "yellow", "purple", "orange"];
         return colors[Math.floor(Math.random() * colors.length)];
@@ -78,6 +117,10 @@ function EmployeeLogin() {
 
     const onSubmit = async (values) => {
         try {
+            if (isLocked) {
+                toast.error(`Too many attempts. Try again in ${lockRemaining}s`);
+                return;
+            }
             if (isCaptchaValid === false) {
                 toast.error("Invalid CAPTCHA");
                 return;
@@ -135,6 +178,11 @@ function EmployeeLogin() {
                     localStorage.setItem("lname", user.employee_lname);
                     localStorage.setItem("userType", "employee");
                     localStorage.setItem("userLevel", user.userlevel_name);
+                    // reset attempts and lock on success
+                    setAttempts(0);
+                    setIsLocked(false);
+                    setLockRemaining(0);
+                    localStorage.removeItem(lockKey);
                     setTimeout(() => {
                         navigateTo("/admin/dashboard");
                     }, 1500);
@@ -159,6 +207,11 @@ function EmployeeLogin() {
                     localStorage.setItem("lname", user.employee_lname);
                     localStorage.setItem("userType", "admin");
                     localStorage.setItem("userLevel", user.userlevel_name);
+                    // reset attempts and lock on success
+                    setAttempts(0);
+                    setIsLocked(false);
+                    setLockRemaining(0);
+                    localStorage.removeItem(lockKey);
                     setTimeout(() => {
                         navigateTo("/admin/dashboard");
                     }, 1500);
@@ -168,11 +221,23 @@ function EmployeeLogin() {
                 console.log("=== LOGIN FAILED ===");
                 console.log("Login failed - Response structure:", responseData);
                 console.log("Why login failed - success:", responseData?.success, "user:", responseData?.user);
-                if (responseData && responseData.message) {
-                    toast.error(responseData.message);
-                } else {
-                    toast.error("Invalid username or password");
-                }
+                const message = (responseData && responseData.message) ? responseData.message : "Invalid username or password";
+                toast.error(message);
+
+                // increment attempts and possibly lock
+                setAttempts((prev) => {
+                    const next = prev + 1;
+                    if (next >= MAX_ATTEMPTS) {
+                        const lockUntil = Date.now() + LOCK_SECONDS * 1000;
+                        localStorage.setItem(lockKey, JSON.stringify({ lockUntil, attempts: next }));
+                        setIsLocked(true);
+                        startLockCountdown(lockUntil);
+                        toast.error(`Too many attempts. Locked for ${LOCK_SECONDS}s`);
+                    } else {
+                        toast.error(`Attempt ${next}/${MAX_ATTEMPTS}`);
+                    }
+                    return next;
+                });
             }
 
         } catch (error) {
@@ -356,14 +421,17 @@ function EmployeeLogin() {
                             {/* Sign In Button */}
                             <Button
                                 type="submit"
-                                disabled={!isCaptchaValid}
-                                className={`w-full h-12 rounded-xl font-semibold text-base transition-all duration-300 transform hover:scale-[1.02] ${isCaptchaValid
+                                disabled={!isCaptchaValid || isLocked}
+                                className={`w-full h-12 rounded-xl font-semibold text-base transition-all duration-300 transform hover:scale-[1.02] ${(isCaptchaValid && !isLocked)
                                         ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl'
                                         : 'bg-slate-300 text-slate-500 cursor-not-allowed'
                                     }`}
                             >
-                                Sign In
+                                {isLocked ? `Locked (${lockRemaining}s)` : 'Sign In'}
                             </Button>
+                             {isLocked && (
+                                 <p className="text-xs text-red-300 text-center mt-2">Too many attempts. Try again in {lockRemaining}s</p>
+                             )}
 
                             
                         </form>

@@ -83,16 +83,29 @@ function ChargeMaster() {
 
   const loadCharges = async () => {
     setIsLoading(true);
-    const reqFormCharges = new FormData();
-    reqFormCharges.append('method', 'viewCharges');
+    const fetchByMethod = async (method) => {
+      const fd = new FormData();
+      fd.append('method', method);
+      const res = await axios.post(APIConn, fd);
+      const data = res?.data;
+      if (Array.isArray(data)) return data;
+      if (typeof data === 'string') {
+        try { return JSON.parse(data); } catch { return []; }
+      }
+      return [];
+    };
 
     try {
-      const conn = await axios.post(APIConn, reqFormCharges);
-      if (conn.data) {
-        setAllCharges(conn.data !== 0 ? conn.data : []);
+      let charges = await fetchByMethod('viewCharges');
+      // Fallback to legacy endpoint if viewCharges returns empty or is unavailable
+      if (!charges || charges.length === 0) {
+        charges = await fetchByMethod('get_available_charges');
       }
+      setAllCharges(Array.isArray(charges) ? charges : []);
     } catch (err) {
+      console.log('Failed to load charges:', err);
       toast('Failed to load charges');
+      setAllCharges([]);
     } finally {
       setIsLoading(false);
     }
@@ -244,10 +257,12 @@ function ChargeMaster() {
   };
 
   // Filter charges based on search term
-  const filteredCharges = allCharges.filter(charge =>
-    charge.charges_master_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    charge.charges_category_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCharges = allCharges.filter((charge) => {
+    const name = (charge.charges_master_name || '').toLowerCase();
+    const cat = (charge.charges_category_name || '').toLowerCase();
+    const term = (searchTerm || '').toLowerCase();
+    return name.includes(term) || cat.includes(term);
+  });
 
   return (
     <>
@@ -377,7 +392,7 @@ function ChargeMaster() {
                       <TableBody>
                         {filteredCharges.length > 0 ? (
                           filteredCharges.map((charge, index) => {
-                            const isActive = charge.charges_master_status_id === 1;
+                            const isActive = String(charge.charges_master_status_id ?? '1') === '1';
                             return (
                               <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <TableCell className="font-medium">

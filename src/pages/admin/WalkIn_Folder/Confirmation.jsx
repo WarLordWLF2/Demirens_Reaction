@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
 export default function Confirmation() {
-  const APIConn = `${localStorage.url}admin.php`;
+  const APIConn = `${localStorage.url}customer.php`;
   const navigate = useNavigate();
   const { walkInData } = useWalkIn();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -144,28 +144,94 @@ export default function Confirmation() {
       // Attach current employee_id for backend attribution
       cleanedData.employee_id = Number(localStorage.getItem('userId')) || 1;
 
+      // Build payload for customerBookingNoAccount
+      const adultsTotal = Number(walkInData.adult || 0);
+      const childrenTotal = Number(walkInData.children || 0);
+      const roomsLen = Math.max(1, cleanedData.selectedRooms.length || 1);
+      const distribute = (count) => {
+        const base = Math.floor(count / roomsLen);
+        const extra = count % roomsLen;
+        return Array.from({ length: roomsLen }, (_, i) => base + (i < extra ? 1 : 0));
+      };
+      const adultDist = distribute(adultsTotal);
+      const childDist = distribute(childrenTotal);
+
+      const roomDetails = cleanedData.selectedRooms.map((room, idx) => ({
+        roomTypeId: Number(room.roomtype_id),
+        adultCount: Number(adultDist[idx] || 0),
+        childrenCount: Number(childDist[idx] || 0),
+        bedCount: 0
+      }));
+
+      const paymentMethodId = (walkInData.payment?.method || '').toLowerCase() === 'cash' ? 1 : 2;
+      const numericAmountPaid = Number(walkInData.payment?.amountPaid || 0);
+      const bookingDetails = {
+        checkIn: cleanedData.checkIn,
+        checkOut: cleanedData.checkOut,
+        downpayment: numericAmountPaid,
+        children: childrenTotal,
+        adult: adultsTotal,
+        totalAmount: Number(cleanedData.billing.total || 0),
+        payment_method_id: paymentMethodId,
+        displayedVat: Number(walkInData.billing?.vat || 0),
+        totalPay: numericAmountPaid
+      };
+
+      const payload = {
+        walkinfirstname: cleanedData.customers_fname,
+        walkinlastname: cleanedData.customers_lname,
+        email: cleanedData.customers_email,
+        contactNumber: cleanedData.customers_phone_number,
+        bookingDetails,
+        roomDetails
+      };
+
       // Prepare and send data
       const formData = new FormData();
-      formData.append('method', 'finalizeBooking');
-      formData.append('json', JSON.stringify(cleanedData));
+      formData.append('operation', 'customerBookingNoAccount');
+      formData.append('json', JSON.stringify(payload));
+      // Optional proof image support if present in state
+      if (walkInData.payment?.proofFile) {
+        formData.append('file', walkInData.payment.proofFile);
+      }
 
       console.log('📤 FormData to be sent:', formData);
-      console.log('📦 JSON payload:', JSON.stringify(cleanedData, null, 2));
-      
+      console.log('📦 JSON payload:', JSON.stringify(payload, null, 2));
       console.log('🌐 Sending request to:', APIConn);
       const res = await axios.post(APIConn, formData);
-      
-      console.log('✅ API Response received:', res);
-      console.log('📄 Response data:', res.data);
-      console.log('📊 Response status:', res.status);
-      
-      setConfirmStatus('success');
-      
-      // Navigate after a short delay to show success state
-      setTimeout(() => {
-        navigate('/admin/choose-rooms');
-      }, 2000);
-      
+
+      let responseData = res.data;
+      try {
+        // In case backend returns JSON string
+        if (typeof responseData === 'string') {
+          responseData = JSON.parse(responseData);
+        }
+      } catch (_) {}
+
+      const isSuccess = responseData === 1 || responseData?.success === true;
+      if (isSuccess) {
+        setConfirmStatus('success');
+        setTimeout(() => {
+          navigate('/admin/choose-rooms');
+        }, 2000);
+      } else {
+        setConfirmStatus('error');
+        const code = Number(responseData);
+        if (code === -1) {
+          alert('No available rooms for the selected date range.');
+        } else if (code === 2) {
+          alert('File upload failed: invalid file type.');
+        } else if (code === 3) {
+          alert('File upload failed: file too large or error.');
+        } else if (code === 4) {
+          alert('File upload failed: move error on server.');
+        } else if (typeof responseData === 'string') {
+          alert(responseData);
+        } else {
+          alert('Booking failed due to an unknown error.');
+        }
+      }
+
     } catch (err) {
       console.error('❌ Error confirming booking:', err);
       console.error('🔍 Error details:', {
