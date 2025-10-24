@@ -366,6 +366,32 @@ function AdminBookingList() {
         jsonData.room_ids = candidateRoomIds;
       }
 
+      // Fallback: fetch assigned rooms for this booking if room_ids are missing/empty
+      if (!jsonData.room_ids || !Array.isArray(jsonData.room_ids) || jsonData.room_ids.length === 0) {
+        try {
+          const fd = new FormData();
+          fd.append('method', 'get_booking_rooms_by_booking');
+          fd.append('json', JSON.stringify({ booking_id: booking.booking_id }));
+          const resp = await axios.post(APIConn, fd);
+          let rows = resp?.data;
+          if (typeof rows === 'string') {
+            try { rows = JSON.parse(rows); } catch {}
+          }
+          const roomIds = Array.isArray(rows)
+            ? rows
+                .map(r => Number(r?.roomnumber_id))
+                .filter(n => Number.isFinite(n) && n > 0)
+            : [];
+          if (roomIds.length > 0) {
+            jsonData.room_ids = roomIds;
+          } else {
+            toast.warning('No assigned rooms found; room occupancy will not change.');
+          }
+        } catch (e) {
+          console.error('Failed to fetch booking rooms for check-in:', e);
+        }
+      }
+
       const formData = new FormData();
       formData.append('method', 'changeBookingStatus');
       formData.append('json', JSON.stringify(jsonData));

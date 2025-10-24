@@ -41,6 +41,7 @@ function AdminProfile() {
   const [adminData, setAdminData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -54,7 +55,11 @@ function AdminProfile() {
     employee_phone: '',
     employee_address: '',
     employee_birthdate: '',
-    employee_gender: '',
+    employee_gender: ''
+  });
+
+  // Separate password data
+  const [passwordData, setPasswordData] = useState({
     current_password: '',
     new_password: '',
     confirm_password: ''
@@ -69,7 +74,7 @@ function AdminProfile() {
   });
 
   useEffect(() => {
-    const { current_password, new_password, confirm_password } = editData;
+    const { current_password, new_password, confirm_password } = passwordData;
     const isChanging = !!(current_password || new_password || confirm_password);
 
     const errors = { current_password: '', new_password: '', confirm_password: '', strength: '' };
@@ -117,7 +122,7 @@ function AdminProfile() {
     }
 
     setPasswordErrors(errors);
-  }, [editData.current_password, editData.new_password, editData.confirm_password]);
+  }, [passwordData.current_password, passwordData.new_password, passwordData.confirm_password]);
 
   const APIConn = localStorage.getItem('url') + "admin.php";
 
@@ -157,10 +162,7 @@ function AdminProfile() {
           employee_phone: data.data.employee_phone || '',
           employee_address: data.data.employee_address || '',
           employee_birthdate: data.data.employee_birthdate || '',
-          employee_gender: data.data.employee_gender || '',
-          current_password: '',
-          new_password: '',
-          confirm_password: ''
+          employee_gender: data.data.employee_gender || ''
         });
       } else {
         toast.error(data?.message || 'Failed to fetch admin data');
@@ -173,45 +175,9 @@ function AdminProfile() {
     }
   };
 
-  // Update admin profile
+  // Update admin profile (without password)
   const updateProfile = async () => {
     try {
-      // Password validation
-      const isChangingPassword = !!(editData.current_password || editData.new_password || editData.confirm_password);
-
-      if (isChangingPassword) {
-        if (!editData.current_password) {
-          toast.error('Current password is required to change your password');
-          return;
-        }
-        if (!editData.new_password) {
-          toast.error('New password is required');
-          return;
-        }
-        if (!editData.confirm_password) {
-          toast.error('Please confirm your new password');
-          return;
-        }
-        if (/\s/.test(editData.new_password)) {
-          toast.error('New password cannot contain spaces');
-          return;
-        }
-        if (editData.new_password !== editData.confirm_password) {
-          toast.error('New passwords do not match');
-          return;
-        }
-        // Strong password: min 8 chars, includes uppercase, lowercase, number, and special character
-        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-        if (!strongPasswordRegex.test(editData.new_password)) {
-          toast.error('New password must be at least 8 characters and include uppercase, lowercase, number, and special character');
-          return;
-        }
-        if (editData.current_password === editData.new_password) {
-          toast.error('New password must be different from current password');
-          return;
-        }
-      }
-
       const userId = localStorage.getItem('userId');
       const userType = (localStorage.getItem('userType') || '').toLowerCase().replace(/[\s_-]/g, '')
       const userLevel = (localStorage.getItem('userLevel') || '').toLowerCase().replace(/[\s_-]/g, '')
@@ -235,12 +201,6 @@ function AdminProfile() {
         employee_gender: editData.employee_gender
       };
 
-      // Add password fields if changing password
-      if (isChangingPassword) {
-        updateData.current_password = editData.current_password;
-        updateData.new_password = editData.new_password;
-      }
-
       const formData = new FormData();
       formData.append('method', 'updateAdminProfile');
       formData.append('json', JSON.stringify(updateData));
@@ -261,6 +221,84 @@ function AdminProfile() {
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Error updating profile');
+    }
+  };
+
+  // Separate password change function
+  const changePassword = async () => {
+    try {
+      // Password validation
+      if (!passwordData.current_password) {
+        toast.error('Current password is required to change your password');
+        return;
+      }
+      if (!passwordData.new_password) {
+        toast.error('New password is required');
+        return;
+      }
+      if (!passwordData.confirm_password) {
+        toast.error('Please confirm your new password');
+        return;
+      }
+      if (/\s/.test(passwordData.new_password)) {
+        toast.error('New password cannot contain spaces');
+        return;
+      }
+      if (passwordData.new_password !== passwordData.confirm_password) {
+        toast.error('New passwords do not match');
+        return;
+      }
+      // Strong password: min 8 chars, includes uppercase, lowercase, number, and special character
+      const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+      if (!strongPasswordRegex.test(passwordData.new_password)) {
+        toast.error('New password must be at least 8 characters and include uppercase, lowercase, number, and special character');
+        return;
+      }
+      if (passwordData.current_password === passwordData.new_password) {
+        toast.error('New password must be different from current password');
+        return;
+      }
+
+      const userId = localStorage.getItem('userId');
+      const userType = (localStorage.getItem('userType') || '').toLowerCase().replace(/[\s_-]/g, '')
+      const userLevel = (localStorage.getItem('userLevel') || '').toLowerCase().replace(/[\s_-]/g, '')
+      const typeAllowed = ['admin','employee','frontdesk'].includes(userType)
+      const levelAllowed = ['admin','frontdesk'].includes(userLevel)
+
+      if (!userId || (!typeAllowed && !levelAllowed)) {
+        toast.error('Employee or Admin access required');
+        return;
+      }
+
+      const updateData = {
+        employee_id: userId,
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password
+      };
+
+      const formData = new FormData();
+      formData.append('method', 'updateAdminProfile');
+      formData.append('json', JSON.stringify(updateData));
+
+      const response = await axios.post(APIConn, formData);
+      console.log('Change Password Response:', response.data);
+
+      // Robustly parse JSON responses (string or object) and accept success/status
+      const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+
+      if (data?.status === 'success' || data?.success === true) {
+        toast.success('Password changed successfully');
+        setIsPasswordModalOpen(false);
+        setPasswordData({ current_password: '', new_password: '', confirm_password: '' });
+        setShowPassword(false);
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
+      } else {
+        toast.error(data?.message || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      toast.error('Error changing password');
     }
   };
 
@@ -324,7 +362,7 @@ function AdminProfile() {
                 <DialogHeader>
                   <DialogTitle>Edit Admin Profile</DialogTitle>
                   <DialogDescription>
-                    Update your personal information and security settings.
+                    Update your personal information.
                   </DialogDescription>
                 </DialogHeader>
                 
@@ -416,91 +454,6 @@ function AdminProfile() {
                       </Select>
                     </div>
                   </div>
-
-                  {/* Password Change Section */}
-                  <div className="border-t pt-4">
-                    <h3 className="text-lg font-medium mb-4">Change Password</h3>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="current_password">Current Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="current_password"
-                            type={showPassword ? "text" : "password"}
-                            value={editData.current_password}
-                            onChange={(e) => setEditData({...editData, current_password: e.target.value})}
-                            placeholder="Enter current password"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                        <p className={`text-xs mt-1 ${passwordErrors.current_password ? 'text-red-600' : 'text-muted-foreground'}`}>
-                          {passwordErrors.current_password || 'Enter your current password to authorize the change'}
-                        </p>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="new_password">New Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="new_password"
-                            type={showNewPassword ? "text" : "password"}
-                            value={editData.new_password}
-                            onChange={(e) => setEditData({...editData, new_password: e.target.value})}
-                            placeholder="Enter new password"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowNewPassword(!showNewPassword)}
-                          >
-                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                        <p className={`text-xs mt-1 ${passwordErrors.new_password ? 'text-red-600' : 'text-muted-foreground'}`}>
-                          {passwordErrors.new_password || 'Use a strong password: at least 8 characters, include uppercase, lowercase, number, and special character. No spaces.'}
-                        </p>
-                        {passwordErrors.strength && (
-                          <p className="text-xs mt-1 text-muted-foreground">{passwordErrors.strength}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="confirm_password">Confirm New Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="confirm_password"
-                            type={showConfirmPassword ? "text" : "password"}
-                            value={editData.confirm_password}
-                            onChange={(e) => setEditData({...editData, confirm_password: e.target.value})}
-                            placeholder="Confirm new password"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          >
-                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                        <p className={`text-xs mt-1 ${passwordErrors.confirm_password ? 'text-red-600' : 'text-muted-foreground'}`}>
-                          {passwordErrors.confirm_password || 'Retype your new password to confirm'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
                 <DialogFooter>
@@ -516,6 +469,115 @@ function AdminProfile() {
               </DialogContent>
             </Dialog>
           </div>
+
+          {/* Password Change Modal */}
+          <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Change Password</DialogTitle>
+                <DialogDescription>
+                  Update your current password to ensure your account remains secure.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="current_password_modal">Current Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="current_password_modal"
+                      type={showPassword ? "text" : "password"}
+                      value={passwordData.current_password}
+                      onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
+                      placeholder="Enter current password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className={`text-xs mt-1 ${passwordErrors.current_password ? 'text-red-600' : 'text-muted-foreground'}`}>
+                    {passwordErrors.current_password || 'Enter your current password to authorize the change'}
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="new_password_modal">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="new_password_modal"
+                      type={showNewPassword ? "text" : "password"}
+                      value={passwordData.new_password}
+                      onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+                      placeholder="Enter new password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className={`text-xs mt-1 ${passwordErrors.new_password ? 'text-red-600' : 'text-muted-foreground'}`}>
+                    {passwordErrors.new_password || 'Use a strong password: at least 8 characters, include uppercase, lowercase, number, and special character. No spaces.'}
+                  </p>
+                  {passwordErrors.strength && (
+                    <p className="text-xs mt-1 text-muted-foreground">{passwordErrors.strength}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="confirm_password_modal">Confirm New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirm_password_modal"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={passwordData.confirm_password}
+                      onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
+                      placeholder="Confirm new password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className={`text-xs mt-1 ${passwordErrors.confirm_password ? 'text-red-600' : 'text-muted-foreground'}`}>
+                    {passwordErrors.confirm_password || 'Retype your new password to confirm'}
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => {
+                  setIsPasswordModalOpen(false);
+                  setPasswordData({ current_password: '', new_password: '', confirm_password: '' });
+                  setShowPassword(false);
+                  setShowNewPassword(false);
+                  setShowConfirmPassword(false);
+                }}>
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button onClick={changePassword} className="bg-[#34699a] hover:bg-[#2a5580] text-white">
+                  <Save className="w-4 h-4 mr-2" />
+                  Change Password
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* New grid layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -535,7 +597,7 @@ function AdminProfile() {
                       <p className="text-xs text-muted-foreground">Update your current password to ensure your account remains secure.</p>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => setIsEditModalOpen(true)}>Manage</Button>
+                  <Button size="sm" variant="outline" onClick={() => setIsPasswordModalOpen(true)}>Manage</Button>
                 </div>
                 {/* Login History */}
                 <div className="flex items-center justify-between py-2">

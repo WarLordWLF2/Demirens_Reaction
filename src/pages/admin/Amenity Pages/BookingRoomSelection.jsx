@@ -812,10 +812,11 @@ function AdminBookingRoomSelection() {
                               return (
                                 <DropdownMenuItem
                                   key={room.booking_room_id}
-                                  disabled={isFull}
-                                  onClick={(e) => {
+                                  disabled={isVisitorOrigin && isFull}
+                                  onSelect={(e) => {
+                                    e.preventDefault();
                                     e.stopPropagation();
-                                    if (isFull) return;
+                                    if (isVisitorOrigin && isFull) return;
                                     handleRoomSelect(room);
                                   }}
                                   className={`${isSelectedRoom ? 'bg-green-50 dark:bg-green-900/20' : ''}`}

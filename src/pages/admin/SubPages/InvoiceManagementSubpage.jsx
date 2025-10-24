@@ -46,10 +46,12 @@ function InvoiceManagementSubpage({
   const [imageViewerSrc, setImageViewerSrc] = useState('');
   const [billingData, setBillingData] = useState([]);
   // Add delivery modal states
+  // Restore delivery modal default to 'both' so user can pick
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
-  const [deliveryMode, setDeliveryMode] = useState('both'); // 'email' | 'pdf' | 'both'
+  const [deliveryMode, setDeliveryMode] = useState('both');
   const [emailTo, setEmailTo] = useState('');
   const [submittingInvoice, setSubmittingInvoice] = useState(false);
+  const [lastPdfUrl, setLastPdfUrl] = useState(null);
 
   // Fetch billing amounts when Booking Information modal opens
   useEffect(() => {
@@ -332,19 +334,45 @@ function InvoiceManagementSubpage({
     }
   };
 
-  // ... existing code ...
-
   // Invoice Creation Logic (open modal first)
   const confirmCreateInvoice = () => {
     setShowDeliveryModal(true);
   };
 
-  // Perform invoice creation with selected delivery mode
+  // Helper: preflight check to ensure browser can fetch blobs from API origin
+  const canDownloadFromApi = async () => {
+    try {
+      const baseUrl = localStorage.getItem("url");
+      if (!baseUrl) return false;
+      // Ping the backend download endpoint to verify API availability
+      await axios.get(baseUrl + "download_invoice.php?ping=1", { timeout: 4000 });
+      return true;
+    } catch (err) {
+      return false;
+    }
+  };
+
   const performCreateInvoiceWithDelivery = async () => {
     if (!selectedBooking) return;
     setSubmittingInvoice(true);
     setLoading(true);
     try {
+      // New primary path: use server-side generator to create and stream the PDF
+      const baseUrl = localStorage.getItem("url") || "";
+      const params = new URLSearchParams({
+        booking_id: String(selectedBooking.booking_id),
+        delivery_mode: deliveryMode,
+        stream: "1",
+      });
+      if (emailTo && emailTo.trim()) { params.set("email_to", emailTo.trim()); }
+      const genUrl = baseUrl + "generate-invoice.php?" + params.toString();
+      console.log("Generate & stream URL:", genUrl);
+      setLastPdfUrl(genUrl);
+      toast.message("Starting download...", { description: "Generating your invoice PDF" });
+      // Hard navigation ensures download prompt in all browsers
+      window.location.href = genUrl;
+
+      // Keep the original API call to update DB state and UI feedback
       const employee_id = getCurrentEmployeeId();
       const jsonData = {
         booking_id: selectedBooking.booking_id,
@@ -362,7 +390,7 @@ function InvoiceManagementSubpage({
       formData.append("operation", "createInvoice");
       formData.append("json", JSON.stringify(jsonData));
 
-      const url = localStorage.getItem("url") + "transactions.php";
+      const url = baseUrl + "transactions.php";
       const res = await axios.post(url, formData);
 
       if (res.data?.success) {
@@ -371,22 +399,35 @@ function InvoiceManagementSubpage({
         if (info?.email_status) {
           toast.info(`Email: ${info.email_status}`);
         }
+        // Secondary path: if generator failed, try direct server download
         if (info?.pdf_url) {
-          toast.info("PDF generated. Opening in new tab...");
-          try { window.open(info.pdf_url, "_blank"); } catch (_) {}
+          const filenameFromUrl = (info.pdf_url.split("/").pop() || `invoice_${selectedBooking.booking_id}_${info.invoice_id}.pdf`).replace(/\?.*$/, "");
+          const dlUrl = baseUrl + "download_invoice.php?file=" + encodeURIComponent(filenameFromUrl);
+          console.log("Invoice PDF URL:", info.pdf_url);
+          console.log("Server download URL:", dlUrl);
+          setLastPdfUrl(dlUrl);
         }
         onInvoiceCreated && onInvoiceCreated();
         onClose && onClose();
       } else {
-        toast.error(res.data.message || "Failed to create invoice.");
+        toast.error(res.data?.message || "Failed to create invoice");
       }
-    } catch (err) {
-      console.error("Error creating invoice:", err);
-      toast.error("An error occurred while creating the invoice: " + (err.response?.data?.message || err.message));
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      toast.error("Error creating invoice: " + (error?.message || "Unknown error"));
     } finally {
       setSubmittingInvoice(false);
       setLoading(false);
-      setShowDeliveryModal(false);
+    }
+  };
+
+  const retryDownloadLastInvoice = async () => {
+    if (!lastPdfUrl) return;
+    try {
+      window.location.href = lastPdfUrl;
+    } catch (err) {
+      // As a final fallback, try opening the direct pdf_url if we logged it earlier
+      // The lastPdfUrl is server route; we cannot recover the direct URL here without state
     }
   };
 
@@ -906,7 +947,7 @@ function InvoiceManagementSubpage({
                     </div>
 
                     <div className="grid grid-cols-1 gap-4">
-                      <div className="flex justify-between items-center py-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg px-3 border border-yellow-200 dark:border-yellow-800">
+                      <div className="flex justify-between items-center py-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 border border-yellow-200 dark:border-yellow-800">
                         <span className="font-bold text-lg">Balance Due:</span>
                         <span className="font-mono font-bold text-lg text-yellow-800 dark:text-yellow-200">{NumberFormatter.formatCurrency(billingBreakdown.balance || ((billingBreakdown.final_total || 0) - (billingBreakdown.downpayment || 0)))}</span>
                       </div>
@@ -1109,7 +1150,7 @@ function InvoiceManagementSubpage({
             </div>
 
             {/* Action Button */}
-            <div className="flex justify-end mt-6">
+            <div className="flex flex-col items-center mt-6">
               <Button 
                 onClick={confirmCreateInvoice}
                 disabled={loading}
@@ -1127,6 +1168,11 @@ function InvoiceManagementSubpage({
                   </>
                 )}
               </Button>
+              {lastPdfUrl && (
+                <button type="button" className="mt-3 text-sm text-blue-600 hover:underline" onClick={retryDownloadLastInvoice}>
+                  Invoice not downloaded? Click to download again
+                </button>
+              )}
             </div>
 
             {/* Delivery Choice Modal */}
@@ -1141,15 +1187,12 @@ function InvoiceManagementSubpage({
                     <Input id="email_to" type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="customer@example.com" />
                     <p className="text-xs text-muted-foreground">If left blank, the customer's saved email will be used.</p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <Button className="w-full" onClick={() => { setDeliveryMode('email'); performCreateInvoiceWithDelivery(); }} disabled={submittingInvoice}>
-                      Send via Email
-                    </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 justify-items-center">
                     <Button className="w-full" variant="secondary" onClick={() => { setDeliveryMode('pdf'); performCreateInvoiceWithDelivery(); }} disabled={submittingInvoice}>
-                      Send Printable Invoice
+                      Download Invoice
                     </Button>
-                    <Button className="w-full bg-[#34699a] hover:bg-[#2c5b86]" onClick={() => { setDeliveryMode('both'); performCreateInvoiceWithDelivery(); }} disabled={submittingInvoice}>
-                      Send Both
+                    <Button className="w-full bg-[#34699a] hover:bg-[#2c5b86]" onClick={() => { setDeliveryMode('both'); performCreateInvoiceWithDelivery(); }} disabled={submittingInvoice || !(emailTo && emailTo.trim())}>
+                      Email and Print Invoice
                     </Button>
                   </div>
                   <div className="flex justify-end gap-2 mt-4">

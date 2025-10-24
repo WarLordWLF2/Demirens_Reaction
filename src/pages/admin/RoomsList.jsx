@@ -465,7 +465,7 @@ function AdminRoomsList() {
     try {
       setSavingEdit(true)
       const formData = new FormData()
-      formData.append('method', 'update_room_types')
+      formData.append('method', 'updateRoomType')
       formData.append('json', JSON.stringify(jsonData))
 
       const res = await axios.post(APIConn, formData)
