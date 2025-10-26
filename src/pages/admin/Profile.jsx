@@ -358,6 +358,7 @@ function AdminProfile() {
                   Edit Profile
                 </Button>
               </DialogTrigger>
+              {/* Removed duplicate Edit Profile trigger button; use header Edit button at right */}
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Edit Admin Profile</DialogTitle>
@@ -466,9 +467,9 @@ function AdminProfile() {
                     Save Changes
                   </Button>
                 </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+                </DialogContent>
+                </Dialog>
+                </div>
 
           {/* Password Change Modal */}
           <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>

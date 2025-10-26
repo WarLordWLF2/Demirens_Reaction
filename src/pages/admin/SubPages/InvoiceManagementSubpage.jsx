@@ -62,7 +62,16 @@ function InvoiceManagementSubpage({
 
   // Sync default email with selected booking
   useEffect(() => {
-    setEmailTo(selectedBooking?.customers_email || selectedBooking?.email || '');
+    const resolvedEmail = selectedBooking?.customer_email || selectedBooking?.customers_email || selectedBooking?.email || '';
+    console.log('[InvoiceManagement] selectedBooking changed:', {
+      booking_id: selectedBooking?.booking_id,
+      reference_no: selectedBooking?.reference_no,
+      customer_email: selectedBooking?.customer_email,
+      customers_email: selectedBooking?.customers_email,
+      email: selectedBooking?.email,
+      resolvedEmail,
+    });
+    setEmailTo(resolvedEmail);
   }, [selectedBooking]);
 
   // Helper: get current logged-in employee ID from localStorage
@@ -1181,16 +1190,16 @@ function InvoiceManagementSubpage({
                 <div className="absolute inset-0 bg-black/50" onClick={() => setShowDeliveryModal(false)} />
                 <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-lg p-6">
                   <h3 className="text-lg font-semibold mb-2">Choose where to submit the customer's invoice</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Select a delivery option. For email, confirm the recipient address below.</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Select a delivery option. Email will use the customer's saved address.</p>
                   <div className="space-y-3 mb-4">
-                    <Label htmlFor="email_to">Email recipient</Label>
-                    <Input id="email_to" type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="customer@example.com" />
-                    <p className="text-xs text-muted-foreground">If left blank, the customer's saved email will be used.</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Email recipient</p>
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {emailTo || selectedBooking?.customer_email || selectedBooking?.customers_email || selectedBooking?.email || 'No email on file'}
+                    </div>
+                    <p className="text-xs text-muted-foreground">This uses the customer's saved email.</p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 justify-items-center">
-                    <Button className="w-full" variant="secondary" onClick={() => { setDeliveryMode('pdf'); performCreateInvoiceWithDelivery(); }} disabled={submittingInvoice}>
-                      Download Invoice
-                    </Button>
+
                     <Button className="w-full bg-[#34699a] hover:bg-[#2c5b86]" onClick={() => { setDeliveryMode('both'); performCreateInvoiceWithDelivery(); }} disabled={submittingInvoice || !(emailTo && emailTo.trim())}>
                       Email and Print Invoice
                     </Button>

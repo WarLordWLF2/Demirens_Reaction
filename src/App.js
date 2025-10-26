@@ -9,7 +9,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminProfile from './pages/admin/Profile';
 import AdminBookingList from './pages/admin/BookingList';
 import AdminCalendar from './pages/admin/Calendar';
-import AdminGuestProfile from './pages/admin/GuestProfile';
+import AdminGuestProfile from './pages/admin/CustomerList';
 import AdminPayments from './pages/admin/Payments';
 import AdminRequestedAmenities from './pages/admin/Amenity Pages/RequestedAmenities';
 import AdminBookingRoomSelection from './pages/admin/Amenity Pages/BookingRoomSelection';
@@ -28,6 +28,7 @@ import Landingpage from './pages/Landingpage';
 import Billings from './pages/admin/Billings';
 import CreateInvoice from './pages/admin/Invoice';
 import EmployeeList from './pages/admin/EmployeeList';
+import NewRoomNumber from './pages/admin/SubPages/NewRoomNumber';
 
 // Online
 import OnlineReqList from './pages/admin/Online_Folder/OnlineReqList';
@@ -128,6 +129,11 @@ function App() {
                 <Route path="/admin/roomslist" element={
                   <AdminRouteGuard>
                     <AdminRoomsList />
+                  </AdminRouteGuard>
+                } />
+                <Route path="/admin/new-room-number" element={
+                  <AdminRouteGuard>
+                    <NewRoomNumber />
                   </AdminRouteGuard>
                 } />
                 <Route path="/admin/bookinglist" element={
