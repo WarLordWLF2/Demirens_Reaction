@@ -52,6 +52,7 @@ function InvoiceManagementSubpage({
   const [emailTo, setEmailTo] = useState('');
   const [submittingInvoice, setSubmittingInvoice] = useState(false);
   const [lastPdfUrl, setLastPdfUrl] = useState(null);
+  const [discounts, setDiscounts] = useState([]);
 
   // Fetch billing amounts when Booking Information modal opens
   useEffect(() => {
@@ -73,6 +74,28 @@ function InvoiceManagementSubpage({
     });
     setEmailTo(resolvedEmail);
   }, [selectedBooking]);
+
+  // Fetch discounts when component mounts
+  useEffect(() => {
+    fetchDiscounts();
+  }, []);
+
+  const fetchDiscounts = async () => {
+    try {
+      const url = localStorage.getItem("url") + "admin.php";
+      const formData = new FormData();
+      formData.append("method", "getEnabledDiscounts");
+      
+      const res = await axios.post(url, formData);
+      if (res.data?.success) {
+        setDiscounts(res.data.data || []);
+      } else {
+        console.error("Failed to fetch discounts:", res.data?.error);
+      }
+    } catch (error) {
+      console.error("Error fetching discounts:", error);
+    }
+  };
 
   // Helper: get current logged-in employee ID from localStorage
   const getCurrentEmployeeId = () => {
@@ -1155,6 +1178,26 @@ function InvoiceManagementSubpage({
                 </Select>
               </div>
               
+              <div className="space-y-2">
+                <Label htmlFor="discount">Discount (Optional)</Label>
+                <Select 
+                  value={invoiceForm.discount_id ? invoiceForm.discount_id.toString() : ""} 
+                  onValueChange={(value) => setInvoiceForm({...invoiceForm, discount_id: value ? parseInt(value) : null})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select discount (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No Discount</SelectItem>
+                    {discounts.map((discount) => (
+                      <SelectItem key={discount.discount_id} value={discount.discount_id.toString()}>
+                        {discount.discount_name} - {discount.discount_percentage ? `${discount.discount_percentage}%` : `₱${discount.discount_amount}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
               
             </div>
 
@@ -1198,6 +1241,20 @@ function InvoiceManagementSubpage({
                     </div>
                     <p className="text-xs text-muted-foreground">This uses the customer's saved email.</p>
                   </div>
+
+                  {/* Allow admin/employee to type a different recipient email */}
+                  <div className="space-y-2 mb-4">
+                    <Label htmlFor="customEmail" className="text-sm font-medium">Send to a different email (optional)</Label>
+                    <Input
+                      id="customEmail"
+                      type="email"
+                      value={emailTo}
+                      onChange={(e) => setEmailTo(e.target.value)}
+                      placeholder="Enter recipient email"
+                    />
+                    <p className="text-xs text-muted-foreground">If the customer has multiple emails, type one here to override.</p>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 justify-items-center">
 
                     <Button className="w-full bg-[#34699a] hover:bg-[#2c5b86]" onClick={() => { setDeliveryMode('both'); performCreateInvoiceWithDelivery(); }} disabled={submittingInvoice || !(emailTo && emailTo.trim())}>

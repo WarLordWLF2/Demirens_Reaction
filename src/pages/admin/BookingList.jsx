@@ -1828,41 +1828,54 @@ function AdminBookingList() {
                           })()}
                         </TableCell>
                         <TableCell className="text-center py-3">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-6 sm:h-7 px-2 sm:px-3"
-                              >
-                                <span className="hidden sm:inline">Actions</span>
-                                <span className="sm:hidden">✨</span>
-                                <ChevronDown className="w-2 h-2 sm:w-3 sm:h-3 ml-1" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="min-w-[180px]">
-                              <DropdownMenuItem onClick={() => handleViewCustomerDetails(b)}>
-                                <Eye className="w-3 h-3 mr-2 text-purple-600" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleExtendBooking(b)}
-                                disabled={b.booking_status === 'Pending'}
-                                className="disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <CalendarPlus className="w-3 h-3 mr-2 text-green-600" />
-                                Extend Booking
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleChangeRoom(b)}
-                                disabled={b.booking_status === 'Pending'}
-                                className="disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <ArrowRightLeft className="w-3 h-3 mr-2 text-[#34699a]" />
-                                Change Room
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          {b.booking_status === 'Checked-In' ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs h-6 sm:h-7 px-2 sm:px-3"
+                                >
+                                  <span className="hidden sm:inline">Actions</span>
+                                  <span className="sm:hidden">✨</span>
+                                  <ChevronDown className="w-2 h-2 sm:w-3 sm:h-3 ml-1" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="min-w-[180px]">
+                                <DropdownMenuItem onClick={() => handleViewCustomerDetails(b)}>
+                                  <Eye className="w-3 h-3 mr-2 text-purple-600" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleExtendBooking(b)}
+                                  disabled={b.booking_status === 'Pending'}
+                                  className="disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <CalendarPlus className="w-3 h-3 mr-2 text-green-600" />
+                                  Extend Booking
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleChangeRoom(b)}
+                                  disabled={b.booking_status === 'Pending'}
+                                  className="disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <ArrowRightLeft className="w-3 h-3 mr-2 text-[#34699a]" />
+                                  Change Room
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs h-6 sm:h-7 px-2 sm:px-3"
+                              onClick={() => handleViewCustomerDetails(b)}
+                            >
+                              <span className="hidden sm:inline">View Booking</span>
+                              <span className="sm:hidden">👁️</span>
+                              <Eye className="w-2 h-2 sm:w-3 sm:h-3 ml-1" />
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -2026,6 +2039,10 @@ function AdminBookingList() {
                           </div>
                         );
                       })()}
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Payment Method</label>
+                      <p className="text-gray-900 dark:text-white">{selectedBooking.booking_paymentMethod || 'N/A'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Room Details</label>
